@@ -3,6 +3,7 @@ import userController from "../controllers/userController";
 import userService from "../services/userServices";
 import friendController from "../controllers/friendController";
 import chatController from "../controllers/chatController";
+import groupController from "../controllers/groupController";
 // import { checkCookie } from "../middleware/jwtMiddleware";
 const router = express.Router();
 /**
@@ -37,6 +38,10 @@ const initAppRoutes = (app) => {
   router.post("/get-all-chat", chatController.handlerGetAllChatPrivate);
   router.post("/get-conversation", chatController.handlerGetAllConversation);
   router.post("/retrieve-messenger", chatController.handlerRetrieveMessenger);
+  // Group Route
+  router.post("/create-group", groupController.handlerCreateNewGroup);
+  router.post("/get-all-group", groupController.handlerGetAllGroup);
+  router.post("/add-members", groupController.handlerAddMembers);
   return app.use("/", router);
 };
 export default initAppRoutes;

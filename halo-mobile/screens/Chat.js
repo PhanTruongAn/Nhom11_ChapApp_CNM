@@ -112,7 +112,7 @@ const ChatScreen = () => {
       quality: 1,
     });
 
-    if (!result) {
+    if (!result.cancelled) {
       setSelectedImage(result.uri);
       console.log("Hình ảnh đã được chọn:", result.uri);
     }
@@ -126,9 +126,9 @@ const ChatScreen = () => {
   const handleSendImage = () => {};
   // Thực hiện cấu hình AWS SDK với thông tin xác thực của bạn
   AWS.config.update({
-    accessKeyId: process.env.ACCESS_KEY,
-    secretAccessKey: process.env.SECRET_KEY,
-    region: process.env.REGION,
+    accessKeyId: "AKIA3FLD5WKWQT5KBUEW",
+    secretAccessKey: "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",
+    region: "ap-southeast-1",
   });
 
   const s3 = new AWS.S3();
@@ -354,16 +354,20 @@ const ChatScreen = () => {
         {item.text.includes(
           "https://imagemessagehalo.s3.ap-southeast-1.amazonaws.com"
         ) ? (
-          <View style={{ width: 150, height: 200, marginBottom: 10 }}>
-            <Image
-              source={{ uri: item.text }}
-              style={{
-                width: "100%",
-                height: "100%",
-                resizeMode: "contain",
-              }}
-            />
-          </View>
+          item.isDeleted ? (
+            <Text style={styles.messageContent}>Tin nhắn đã thu hồi</Text>
+          ) : (
+            <View style={{ width: 150, height: 200, marginBottom: 10 }}>
+              <Image
+                source={{ uri: item.text }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  resizeMode: "contain",
+                }}
+              />
+            </View>
+          )
         ) : (
           <Text style={styles.messageContent}>
             {item.isDeleted ? "Tin nhắn đã thu hồi" : item.text}

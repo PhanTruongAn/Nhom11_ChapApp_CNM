@@ -23,6 +23,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Test from "./screens/Test";
 import CreateGroup from "./screens/CreateGroup";
 import ChatGroup from "./screens/ChatGroup";
+import GroupOption from "./screens/GroupOption";
+import MemberGroup from "./screens/MemberGroup";
+import AddMember from "./screens/AddMember";
 const Stack = createNativeStackNavigator();
 const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -180,9 +183,30 @@ const App = () => {
             name="ChatGroup"
             component={ChatGroup}
           ></Stack.Screen>
+          <Stack.Screen
+            options={{
+              headerShown: false,
+            }}
+            name="GroupOption"
+            component={GroupOption}
+          ></Stack.Screen>
+          <Stack.Screen
+            options={{
+              headerShown: false,
+            }}
+            name="MemberGroup"
+            component={MemberGroup}
+          ></Stack.Screen>
+          <Stack.Screen
+            options={{
+              headerShown: false,
+            }}
+            name="AddMember"
+            component={AddMember}
+          ></Stack.Screen>
         </Stack.Navigator>
       </NavigationContainer>
-      {/* <CreateGroup /> */}
+      {/* <AddMember /> */}
     </Provider>
   );
 };

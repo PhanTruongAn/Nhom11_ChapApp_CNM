@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
+  Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
@@ -24,16 +25,15 @@ import { handlerConfirmFriend } from "../config/configSocket";
 import { handlerConfirmAddFriend } from "../config/configSocket";
 import { handlerDeleteFriend } from "../config/configSocket";
 import { handlerDelete } from "../config/configSocket";
+import { io } from "socket.io-client";
+import socket from "../config/configSocket";
+import groupApi from "../api/groupApi";
+import { handlerJoinRoom } from "../config/configSocket";
 const Tab = createMaterialTopTabNavigator();
 
 const FriendListScreen = ({ navigation }) => {
   const user = useSelector((state) => state.userLogin.user);
   console.log("Redux:", user);
-  // const fetchData = async () => {
-  //   await AsyncStorage.setItem("login", JSON.stringify(user));
-  //   const data = await AsyncStorage.getItem("login");
-  //   console.log("DataAsync", JSON.parse(data));
-  // };
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
   const friendsData = [
@@ -369,22 +369,75 @@ const FriendRequestComponent = () => {
   );
 };
 
-const GroupListComponent = () => {
+const GroupListComponent = ({ navigation }) => {
+  const user = useSelector((state) => state.userLogin.user);
+  const dispatch = useDispatch();
+  const [group, setGroup] = useState([]);
+  useEffect(() => {
+    socket.on("retrieve", async (call) => {
+      const memberId = {
+        _id: call.member._id,
+      };
+      // getAllGroup(memberId);
+      getAllGroup(user);
+    });
+  }, [socket]);
+  useEffect(() => {
+    getAllGroup(user);
+  }, []);
+
   const groupsData = [
     { id: "1", name: "Group 1" },
     { id: "2", name: "Group 2" },
     // ... more groups
   ];
-
+  const getAllGroup = async (data) => {
+    const res = await groupApi.getAllGroup(data);
+    if (res) {
+      console.log("Groups: ", res.DT);
+      setGroup(res.DT);
+    } else {
+      alert(res.EM);
+    }
+  };
   return (
     <FlatList
-      data={groupsData}
-      keyExtractor={(item) => item.id}
+      data={group}
+      keyExtractor={(item) => item._id}
       renderItem={({ item }) => (
-        <View style={styles.itemContainer}>
-          <Ionicons name="people" size={24} color="black" style={styles.icon} />
+        <Pressable
+          style={styles.itemContainer}
+          onPress={() => {
+            handlerJoinRoom({
+              groupId: item._id,
+              user: user.phone,
+              groupName: item.name,
+            });
+            navigation.navigate("ChatGroup", { groupData: item });
+          }}
+        >
+          <Avatar
+            size={50}
+            rounded
+            source={require("../assets/avatar-default.jpeg")}
+          />
           <Text style={styles.itemText}>{item.name}</Text>
-        </View>
+          <TouchableOpacity
+            style={{
+              width: 90,
+              height: 40,
+              justifyContent: "center",
+              backgroundColor: "red",
+              borderRadius: 10,
+              position: "absolute",
+              right: 10,
+            }}
+          >
+            <Text style={{ fontSize: 16, alignSelf: "center", color: "white" }}>
+              Xóa nhóm
+            </Text>
+          </TouchableOpacity>
+        </Pressable>
       )}
     />
   );
@@ -420,6 +473,7 @@ const styles = StyleSheet.create({
     color: "white",
   },
   itemContainer: {
+    backgroundColor: "white",
     flexDirection: "row",
     alignItems: "center",
     padding: 10,

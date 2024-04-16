@@ -15,10 +15,18 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRoute } from "@react-navigation/core";
 import { createGroup } from "../config/configSocket";
 import groupApi from "../api/groupApi";
+import { initGroup } from "../redux/groupSlice";
 import { handlerJoinRoom } from "../config/configSocket";
 import { groupConversation } from "../redux/conversationSlice";
-const CustomPopup = ({ isVisible, avatars, user, data, navigation }) => {
-  const route = useRoute();
+const CustomPopup = ({
+  isVisible,
+  avatars,
+  user,
+  data,
+  navigation,
+  dispatch,
+  initGroup,
+}) => {
   if (!isVisible) return null;
 
   const renderAvatarItem = ({ item }) => (
@@ -35,7 +43,6 @@ const CustomPopup = ({ isVisible, avatars, user, data, navigation }) => {
       <FlatList
         data={avatars}
         renderItem={renderAvatarItem}
-        // keyExtractor={(item) => item.id.toString()}
         horizontal={true}
         contentContainerStyle={styles.avatarList}
         ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
@@ -43,14 +50,14 @@ const CustomPopup = ({ isVisible, avatars, user, data, navigation }) => {
       <TouchableOpacity
         style={styles.confirmButton}
         onPress={async () => {
-          const res = await groupApi.createGroup(data);
+          const res = await groupApi.addMembers(data);
+          dispatch(initGroup(res.DT));
           createGroup(res.DT);
-          handlerJoinRoom({
-            groupId: res.DT._id,
-            user: user.phone,
-            groupName: res.DT.name,
-          });
-          navigation.navigate("ChatGroup", { groupData: res.DT });
+          alert("Thêm thành viên thành công");
+          navigation.navigate("ChatGroup");
+          //   createGroup(res.DT);
+
+          //   navigation.navigate("ChatGroup", { groupData: res.DT });
         }}
       >
         <View style={{ alignSelf: "center" }}>
@@ -60,17 +67,15 @@ const CustomPopup = ({ isVisible, avatars, user, data, navigation }) => {
     </View>
   );
 };
-
-const CreateGroup = ({ navigation }) => {
+const AddMember = ({ navigation }) => {
   const route = useRoute();
+  const dispatch = useDispatch();
   const user = useSelector((state) => state.userLogin.user);
-  const conversation = useSelector((state) => state.usersInit.users);
+  const group = useSelector((state) => state.groupsInit.group);
   const [isInputVisible, setIsInputVisible] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [tab, setTab] = useState("friends");
-  // console.log(selectedUsers);
-  const recentUsers = conversation;
   const [originalFriends, setOriginalFriends] = useState([...user.friends]);
   const [friends, setFriends] = useState(originalFriends);
 
@@ -85,15 +90,6 @@ const CreateGroup = ({ navigation }) => {
     }
   };
   const [isModalVisible, setIsModalVisible] = useState(false);
-
-  const handleCheck = () => {
-    setIsInputVisible(!isInputVisible);
-    // Handle group name confirmation
-  };
-
-  const handleTabChange = (tab) => {
-    setTab(tab);
-  };
 
   const toggleModal = () => {
     setIsModalVisible(!isModalVisible);
@@ -152,9 +148,9 @@ const CreateGroup = ({ navigation }) => {
     </TouchableOpacity>
   );
   const data = {
-    authorId: user._id,
-    groupName: groupName,
+    _id: group._id,
     members: selectedUsers,
+    groupName: group.name,
   };
 
   // const renderAvatarItem = ({ item }) => (
@@ -169,24 +165,21 @@ const CreateGroup = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+        <TouchableOpacity
+          style={{ marginLeft: 10 }}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={25} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Nhóm mới</Text>
-        <Text>Đã chọn: {selectedUsers.length}</Text>
+        <Text
+          style={{ fontWeight: "500", position: "absolute", left: 50, top: 20 }}
+        >
+          Đã chọn: {selectedUsers.length}
+        </Text>
       </View>
 
       {/* Group Name Input */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textInput}
-          placeholder="Nhập tên nhóm"
-          onChangeText={(e) => setGroupName(e)}
-        />
-        <TouchableOpacity onPress={handleCheck}>
-          <Ionicons name="checkmark" size={24} color="black" />
-        </TouchableOpacity>
-      </View>
 
       {/* Search Bar */}
       <View style={styles.searchBar}>
@@ -203,24 +196,13 @@ const CreateGroup = ({ navigation }) => {
         />
       </View>
 
-      {/* Tab Buttons */}
-      <View style={styles.tabButtons}>
-        <TouchableOpacity onPress={() => handleTabChange("friends")}>
-          <Text style={tab === "friends" ? styles.activeTab : styles.tab}>
-            Bạn bè
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleTabChange("recent")}>
-          <Text style={tab === "recent" ? styles.activeTab : styles.tab}>
-            Gần đây
-          </Text>
-        </TouchableOpacity>
+      <View style={{ flex: 1, marginTop: 20 }}>
+        <FlatList
+          data={friends}
+          renderItem={renderUserItem}
+          // keyExtractor={(item) => item.id.toString()}
+        />
       </View>
-      <FlatList
-        data={tab === "friends" ? friends : recentUsers}
-        renderItem={renderUserItem}
-        // keyExtractor={(item) => item.id.toString()}
-      />
       <CustomPopup
         isVisible={selectedUsers.length > 0}
         avatars={selectedUsers.map((selectedUser) =>
@@ -229,10 +211,14 @@ const CreateGroup = ({ navigation }) => {
         user={user}
         data={data} // Truyền biến selectedUsers vào CustomPopup
         navigation={navigation}
+        dispatch={dispatch}
+        initGroup={initGroup}
       />
     </View>
   );
 };
+
+export default AddMember;
 
 const styles = StyleSheet.create({
   container: {
@@ -256,19 +242,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    backgroundColor: "#1faeeb",
     height: 40,
     width: "100%",
+    borderRadius: 5,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 17,
+    fontWeight: "500",
+    color: "white",
+    position: "absolute",
+    left: 50,
+    top: 1,
   },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 5,
-    marginBottom: 10,
-  },
+
   textInput: {
     flex: 1,
     color: "gray",
@@ -276,6 +263,7 @@ const styles = StyleSheet.create({
     marginLeft: 50,
   },
   searchBar: {
+    marginTop: 15,
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 5,
@@ -350,5 +338,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
-export default CreateGroup;

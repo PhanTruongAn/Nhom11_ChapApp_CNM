@@ -15,11 +15,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import extendFunctions from "../constants/extendFunctions";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser, updateUser } from "../redux/userSlice";
+import { groupConversation } from "../redux/conversationSlice";
 import { handleCustomClient } from "../config/configSocket";
 import chatApi from "../api/chatApi";
 import userApi from "../api/userApi";
+import groupApi from "../api/groupApi";
+import { initGroup } from "../redux/groupSlice";
 import { initUsers } from "../redux/conversationSlice";
 import { Pressable } from "react-native";
+import { handlerJoinRoom } from "../config/configSocket";
+import socket from "../config/configSocket";
 const ChatListScreen = ({ navigation }) => {
   const conversation = useSelector((state) => state.usersInit.users);
   // console.log("Conversation:", conversation);
@@ -27,6 +32,7 @@ const ChatListScreen = ({ navigation }) => {
   const [isReady, setIsReady] = useState(false); // Flag to track if useEffect is done
   const [isDataLoaded, setIsDataLoaded] = useState(false); // Flag to track if data is loaded from Redux
   const [chatList, setChatList] = useState([]);
+
   ///////// Create Modal
   const [isModalVisible, setIsModalVisible] = useState(false);
   const toggleModal = () => {
@@ -34,12 +40,20 @@ const ChatListScreen = ({ navigation }) => {
   };
 
   const searchInputRef = useRef(null);
+  // const getAllGroup = async (data) => {
+  //   const res = await groupApi.getAllGroup(data);
+  //   return res.DT;
+  // };
   const getData = async (data) => {
     const req = await userApi.getData(data);
     if (req) {
       dispatch(updateUser(req.DT));
       const conversation = await chatApi.getConversation(req.DT);
+      const groups = await groupApi.getAllGroup(req.DT);
+      console.log("Groups: ", groups.DT);
       dispatch(initUsers(conversation.DT));
+      dispatch(groupConversation(groups.DT));
+      console.log("Conversation: ", conversation);
     }
   };
 
@@ -62,7 +76,6 @@ const ChatListScreen = ({ navigation }) => {
     };
     fetchData();
   }, [dispatch]);
-
   // Lấy dữ liệu user từ Redux store chỉ khi dữ liệu đã được cập nhật
   const userLogin = useSelector((state) => {
     if (isDataLoaded) {
@@ -79,6 +92,28 @@ const ChatListScreen = ({ navigation }) => {
       handleCustomClient({ customId: userLogin.phone });
     }
   }, [userLogin]);
+  useEffect(() => {
+    socket.on("retrieve", (call) => {
+      console.log("Call", call);
+      const fetchData = async () => {
+        try {
+          const data = await AsyncStorage.getItem("login");
+          const convert = JSON.parse(data);
+          getData(convert);
+
+          // if (data) {
+          //   // dispatch(updateUser(JSON.parse(data)));
+          //   // console.log("DataStorage:", JSON.parse(data));
+          // }
+
+          setIsDataLoaded(true); // Marking data as loaded from Redux
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        }
+      };
+      fetchData();
+    });
+  }, [socket]);
 
   const onFocusSearch = () => {
     navigation.navigate("SearchScreen");
@@ -104,15 +139,30 @@ const ChatListScreen = ({ navigation }) => {
   const renderItem = ({ item }) => (
     <TouchableOpacity
       onPress={() => {
-        navigation.navigate("ChatScreen", { user: item });
+        if (item.members) {
+          dispatch(initGroup(item));
+          handlerJoinRoom({
+            groupId: item._id,
+            user: userLogin.phone,
+            groupName: item.name,
+          });
+          navigation.navigate("ChatGroup");
+        } else {
+          navigation.navigate("ChatScreen", { user: item });
+        }
       }}
       style={styles.itemContainer}
     >
       <View style={{ padding: 8 }}>
-        {item.avatar.uri ? ( // Nếu chưa chọn ảnh mới, nhưng người dùng đã có ảnh, hiển thị ảnh của người dùng
+        {item.avatar.uri ? (
           <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
+        ) : !item.avatar.color ? (
+          <Avatar
+            size={50}
+            rounded
+            source={require("../assets/avatar-default.jpeg")}
+          />
         ) : (
-          // Nếu chưa chọn ảnh mới và người dùng cũng chưa có ảnh, hiển thị avatar mặc định
           <Avatar
             size={50}
             rounded
@@ -121,12 +171,13 @@ const ChatListScreen = ({ navigation }) => {
           />
         )}
       </View>
-
       <View style={styles.content}>
         <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.message}>
-          {isImageURL(item.lastMessage) ? "Đã gửi 1 ảnh" : item.lastMessage}
-        </Text>
+        {item.lastMessage && (
+          <Text style={styles.message}>
+            {isImageURL(item.lastMessage) ? "Đã gửi 1 ảnh" : item.lastMessage}
+          </Text>
+        )}
       </View>
       <View style={styles.info}>
         <Text style={styles.time}>

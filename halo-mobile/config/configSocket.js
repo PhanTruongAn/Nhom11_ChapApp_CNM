@@ -67,6 +67,15 @@ const receiveMessenger = () => {
 const retrieveMessenger = (data) => {
   socket.emit("retrieveMessenger", data);
 };
+const createGroup = (data) => {
+  socket.emit("createGroup", data);
+};
+const handlerJoinRoom = (data) => {
+  socket.emit("joinRoom", data);
+};
+const test = (data) => {
+  socket.emit("test", data);
+};
 export default socket;
 export {
   handleCustomClient,
@@ -84,4 +93,7 @@ export {
   senderMessenger,
   receiveMessenger,
   retrieveMessenger,
+  createGroup,
+  handlerJoinRoom,
+  test,
 };

@@ -18,7 +18,11 @@ export const conversationSlice = createSlice({
         state.users[index] = action.payload;
       }
     },
+    groupConversation: (state, action) => {
+      state.users = [...state.users, ...action.payload];
+    },
   },
 });
-export const { initUsers, lastMessenger } = conversationSlice.actions;
+export const { initUsers, lastMessenger, groupConversation } =
+  conversationSlice.actions;
 export default conversationSlice.reducer;

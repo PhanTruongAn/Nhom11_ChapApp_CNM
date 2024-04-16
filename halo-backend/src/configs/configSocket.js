@@ -191,20 +191,38 @@ const configSocket = (server) => {
         if (index !== -1) {
           socket
             .to(clients[index].clientId)
-            .emit("retrieveMes", dataResend, () => {
-              // console.log("Sender:", sender);
-              // console.log("Receiver:", receiver);
-              // console.log("Text:", text);
-            });
+            .emit("retrieveMes", dataResend, () => {});
           console.log("Data retrieve:", dataResend);
         } else {
           console.log("test error");
         }
       }
     });
+
+    socket.on("createGroup", (call) => {
+      console.log("Callback: ", call);
+      // for (let i = 0; i < call.members.length; i++) {
+      //   let member = call.members[i];
+      //   let index = clients.findIndex((item) => item.customId === member.phone);
+      //   if (index !== -1) {
+      //     socket.to(clients[index].clientId).emit("retrieve", { member });
+      //   }
+      // }
+      io.emit("retrieve");
+    });
+
+    socket.on("joinRoom", (data) => {
+      socket.join(data.groupId);
+      console.log(`User:${data.user} joined room: ${data.groupName}`);
+    });
+
     socket.on("disconnect", () => {
       socket.disconnect();
       console.log(`${socket.id}  user disconnected`);
+    });
+
+    socket.on("test", (data) => {
+      io.to(data.roomId).emit("receiveMessage", data.messenger);
     });
   });
 };
