@@ -126,9 +126,9 @@ const ChatScreen = () => {
   const handleSendImage = () => {};
   // Thực hiện cấu hình AWS SDK với thông tin xác thực của bạn
   AWS.config.update({
-    accessKeyId: "AKIA3FLD5WKWQT5KBUEW",
-    secretAccessKey: "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",
-    region: "ap-southeast-1",
+    accessKeyId: process.env.ACCESS_KEY,
+    secretAccessKey: process.env.SECRET_KEY,
+    region: process.env.REGION,
   });
 
   const s3 = new AWS.S3();
