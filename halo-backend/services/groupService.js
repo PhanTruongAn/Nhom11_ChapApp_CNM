@@ -96,9 +96,60 @@ const GetAllGroupByUserId = async (data) => {
     };
   }
 };
+const DeleteMembersFromGroup = async (data) => {
+  try {
+    const item = data.member._id;
+    const updatedGroup = await Group.findOneAndUpdate(
+      { _id: data._id },
+      { $pull: { members: item } },
+      { new: true }
+    )
+      .populate("author", "_id name phone email avatar")
+      .populate("members", "_id name phone email avatar")
+      .exec();
+
+    return {
+      EM: "Delete members successfully!",
+      EC: 0,
+      DT: updatedGroup,
+    };
+  } catch (error) {
+    return {
+      EM: "Error from server!",
+      EC: 1,
+    };
+  }
+};
+const DeleteGroupById = async (data) => {
+  const _id = data._id;
+  try {
+    const deletedGroup = await Group.findByIdAndDelete(_id);
+    if (deletedGroup) {
+      return {
+        EM: "Delete group by id success!",
+        EC: 0,
+        DT: {},
+      };
+    }
+    return {
+      EM: "No group found for the given id!",
+      EC: 0,
+      DT: null,
+    };
+  } catch (error) {
+    console.log("server " + error);
+    return {
+      EM: "Something went wrong on the server",
+      EC: 1,
+      DT: null,
+    };
+  }
+};
 
 module.exports = {
   CreateNewGroup,
   GetAllGroupByUserId,
   AddMembersToGroup,
+  DeleteMembersFromGroup,
+  DeleteGroupById,
 };

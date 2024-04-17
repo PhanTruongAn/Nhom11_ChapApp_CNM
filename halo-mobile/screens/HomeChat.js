@@ -40,10 +40,6 @@ const ChatListScreen = ({ navigation }) => {
   };
 
   const searchInputRef = useRef(null);
-  // const getAllGroup = async (data) => {
-  //   const res = await groupApi.getAllGroup(data);
-  //   return res.DT;
-  // };
   const getData = async (data) => {
     const req = await userApi.getData(data);
     if (req) {
@@ -56,27 +52,19 @@ const ChatListScreen = ({ navigation }) => {
       console.log("Conversation: ", conversation);
     }
   };
-
+  const fetchData = async () => {
+    try {
+      const data = await AsyncStorage.getItem("login");
+      const convert = JSON.parse(data);
+      getData(convert);
+      setIsDataLoaded(true);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await AsyncStorage.getItem("login");
-        const convert = JSON.parse(data);
-        getData(convert);
-
-        // if (data) {
-        //   // dispatch(updateUser(JSON.parse(data)));
-        //   // console.log("DataStorage:", JSON.parse(data));
-        // }
-
-        setIsDataLoaded(true); // Marking data as loaded from Redux
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
     fetchData();
   }, [dispatch]);
-  // Lấy dữ liệu user từ Redux store chỉ khi dữ liệu đã được cập nhật
   const userLogin = useSelector((state) => {
     if (isDataLoaded) {
       return state.userLogin.user;
@@ -87,30 +75,19 @@ const ChatListScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (userLogin !== null) {
-      setIsReady(true); // Marking useEffect as done when user data is available
+      setIsReady(true);
       setChatList(userLogin.friends);
       handleCustomClient({ customId: userLogin.phone });
     }
   }, [userLogin]);
   useEffect(() => {
     socket.on("retrieve", (call) => {
-      console.log("Call", call);
-      const fetchData = async () => {
-        try {
-          const data = await AsyncStorage.getItem("login");
-          const convert = JSON.parse(data);
-          getData(convert);
-
-          // if (data) {
-          //   // dispatch(updateUser(JSON.parse(data)));
-          //   // console.log("DataStorage:", JSON.parse(data));
-          // }
-
-          setIsDataLoaded(true); // Marking data as loaded from Redux
-        } catch (error) {
-          console.error("Error fetching data:", error);
-        }
-      };
+      fetchData();
+    });
+    socket.on("retrieveDelete", (call) => {
+      fetchData();
+    });
+    socket.on("deleteGroup", (call) => {
       fetchData();
     });
   }, [socket]);

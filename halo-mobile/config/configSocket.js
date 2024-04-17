@@ -73,8 +73,14 @@ const createGroup = (data) => {
 const handlerJoinRoom = (data) => {
   socket.emit("joinRoom", data);
 };
-const test = (data) => {
-  socket.emit("test", data);
+const sendMessInGroup = (data) => {
+  socket.emit("sendMessengerInGroup", data);
+};
+const deleteMemberSocket = (data) => {
+  socket.emit("deleteMember", data);
+};
+const deleteGroupSocket = (data) => {
+  socket.emit("deleteGroup", data);
 };
 export default socket;
 export {
@@ -95,5 +101,7 @@ export {
   retrieveMessenger,
   createGroup,
   handlerJoinRoom,
-  test,
+  sendMessInGroup,
+  deleteMemberSocket,
+  deleteGroupSocket,
 };

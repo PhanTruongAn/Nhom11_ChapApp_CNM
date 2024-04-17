@@ -17,7 +17,9 @@ import { createGroup } from "../config/configSocket";
 import groupApi from "../api/groupApi";
 import { handlerJoinRoom } from "../config/configSocket";
 import { groupConversation } from "../redux/conversationSlice";
+import { initGroup } from "../redux/groupSlice";
 const CustomPopup = ({ isVisible, avatars, user, data, navigation }) => {
+  const dispatch = useDispatch();
   const route = useRoute();
   if (!isVisible) return null;
 
@@ -44,13 +46,16 @@ const CustomPopup = ({ isVisible, avatars, user, data, navigation }) => {
         style={styles.confirmButton}
         onPress={async () => {
           const res = await groupApi.createGroup(data);
-          createGroup(res.DT);
-          handlerJoinRoom({
-            groupId: res.DT._id,
-            user: user.phone,
-            groupName: res.DT.name,
-          });
-          navigation.navigate("ChatGroup", { groupData: res.DT });
+          if (res) {
+            createGroup(res.DT);
+            handlerJoinRoom({
+              groupId: res.DT._id,
+              user: user.phone,
+              groupName: res.DT.name,
+            });
+            dispatch(initGroup(res.DT));
+            navigation.navigate("ChatGroup");
+          }
         }}
       >
         <View style={{ alignSelf: "center" }}>

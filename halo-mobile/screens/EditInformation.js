@@ -172,7 +172,7 @@ const EditInformation = ({ navigation }) => {
       <View style={styles.contentContainer}>
         <View style={styles.infoContainer}>
           <View style={styles.avatarContainer}>
-            <TouchableOpacity onPress={handleEditAvatar}>
+            <TouchableOpacity onPress={pickImage}>
               {image ? ( // Nếu đã chọn ảnh mới, hiển thị ảnh mới
                 <Avatar size={100} rounded source={{ uri: image }} />
               ) : user.avatar.uri ? ( // Nếu chưa chọn ảnh mới, nhưng người dùng đã có ảnh, hiển thị ảnh của người dùng

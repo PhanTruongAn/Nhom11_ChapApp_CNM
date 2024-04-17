@@ -11,12 +11,31 @@ import { AntDesign, Entypo, Feather, FontAwesome5 } from "@expo/vector-icons";
 import { Avatar } from "@rneui/themed";
 import { useRoute } from "@react-navigation/core";
 import { useState } from "react";
+import socket from "../config/configSocket";
 import { useDispatch, useSelector } from "react-redux";
+import groupApi from "../api/groupApi";
+import { deleteGroupSocket } from "../config/configSocket";
+import { useEffect } from "react";
 const GroupOption = ({ navigation }) => {
   const route = useRoute();
   const user = useSelector((state) => state.userLogin.user);
   const groupOption = useSelector((state) => state.groupsInit.group);
-  console.log(groupOption);
+  useEffect(() => {
+    socket.on("deleteGroup", (call) => {
+      alert("Nhóm đã bị xóa");
+      navigation.navigate("ChatList");
+    });
+  }, [socket]);
+
+  const handlerDeleteGroup = async () => {
+    const data = {
+      _id: groupOption._id,
+    };
+    const res = await groupApi.deleteGroup(data);
+    if (res) {
+      deleteGroupSocket();
+    }
+  };
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -158,8 +177,16 @@ const GroupOption = ({ navigation }) => {
           <AntDesign name="deleteuser" size={23} color="gray" />
         </Pressable>
 
-        <Pressable style={styles.pressable}>
-          <Text style={styles.pressableText}>Xóa nhóm</Text>
+        <Pressable style={styles.pressable} onPress={handlerDeleteGroup}>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: "600",
+              color: "red",
+            }}
+          >
+            Xóa nhóm
+          </Text>
           <AntDesign name="deleteusergroup" size={23} color="gray" />
         </Pressable>
       </View>

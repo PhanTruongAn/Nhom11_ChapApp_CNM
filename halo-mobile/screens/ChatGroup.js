@@ -16,7 +16,6 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 // import ImagePicker from "react-native-image-picker";
-import { useNavigation } from "@react-navigation/native";
 import IconPickerModal from "./IconPickerModal";
 import { Avatar } from "@rneui/themed";
 import extendFunctions from "../constants/extendFunctions";
@@ -35,12 +34,13 @@ import AWS from "aws-sdk";
 import * as FileSystem from "expo-file-system";
 import { decode } from "base-64";
 import * as Crypto from "expo-crypto";
-import { test } from "../config/configSocket";
-const ChatGroup = () => {
+import { sendMessInGroup } from "../config/configSocket";
+import groupApi from "../api/groupApi";
+const ChatGroup = ({ navigation }) => {
   const route = useRoute();
   const dispatch = useDispatch();
   const userSender = useSelector((state) => state.userLogin.user);
-  // const userReceiver = route.params.member;
+
   const groupData = useSelector((state) => state.groupsInit.group);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -49,35 +49,132 @@ const ChatGroup = () => {
   const [receivedMessage, setReceivedMessage] = useState(""); // State để lưu trữ nội dung nhận được
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [imageURL, setImageURL] = useState();
-  const iconRef = useRef(null);
-  const navigation = useNavigation();
+  const [members, setMembers] = useState([
+    ...groupData.members,
+    groupData.author,
+  ]);
+  const memberFilter = members.filter(
+    (member) => member._id !== userSender._id
+  );
+  const getAllChat = async () => {
+    const data = {
+      groupId: groupData._id,
+    };
+    const res = await groupApi.getAllChatGroup(data);
+
+    setMessages(res.DT);
+  };
+  // useEffect(() => {
+  //   socket.on("receiveMessage", (res) => {
+  //     const filter = [...res.receiver, res.sender];
+  //     console.log("Filter:", filter);
+  //     setMessages((prevState) => [
+  //       ...prevState,
+  //       {
+  //         idMessenger: res.idMessenger,
+  //         sender: userReceiver._id,
+  //         groupId: res.groupId,
+  //         isDeleted: res.isDeleted,
+  //         text: res.text,
+  //         createdAt: res.createdAt,
+  //         receiver: userSender._id,
+  //       },
+  //     ]);
+  //     getAllChat();
+  //   });
+  //   socket.on("retrieveDelete", (call) => {
+  //     alert("Bạn đã bị xóa khỏi nhóm");
+  //     navigation.navigate("ChatList");
+  //   });
+  //   socket.on("deleteGroup", (call) => {
+  //     alert("Nhóm đã bị xóa");
+  //     navigation.navigate("ChatList");
+  //   });
+  // }, [socket]);
+
+  useEffect(() => {
+    socket.on("test", (res) => {
+      setMessages((prevState) => [
+        ...prevState,
+        {
+          idMessenger: res.idMessenger,
+          sender: res.sender,
+          groupId: res.groupId,
+          text: res.text,
+          createdAt: res.createdAt,
+          receiver: res.receiver,
+        },
+      ]);
+    });
+    getAllChat();
+  }, [socket]);
+  useEffect(() => {
+    getAllChat();
+  }, []);
+
+  console.log("Messages:", messages);
   const formatTime = (time) => {
     const date = new Date(time);
     const hours = date.getHours();
     const minutes = date.getMinutes();
     return `${hours}:${minutes}`;
   };
-  const handleSend = () => {
-    test({ roomId: groupData._id, messenger: newMessage });
+  const generateUUID = async () => {
+    const randomBytes = await Crypto.getRandomBytesAsync(16);
+    const uuid = Array.from(new Uint8Array(randomBytes))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return `${uuid.substr(0, 8)}-${uuid.substr(8, 4)}-${uuid.substr(
+      12,
+      4
+    )}-${uuid.substr(16, 4)}-${uuid.substr(20)}`;
+  };
+  const handleSend = async () => {
+    const data = {
+      idMessenger: await generateUUID(),
+      sender: userSender._id,
+      groupId: groupData._id,
+      text: newMessage,
+      createdAt: Date.now(),
+    };
+
+    // Gửi tin nhắn qua socket
+    sendMessInGroup({
+      ...data,
+      sender: userSender,
+      receiver: memberFilter,
+      isDeleted: false,
+    });
+
+    // Cập nhật UI ngay lập tức
+    setMessages((prevState) => [
+      ...prevState,
+      {
+        idMessenger: data.idMessenger,
+        sender: data.sender,
+        groupId: data.groupId,
+        text: data.text,
+        createdAt: data.createdAt,
+        receiver: memberFilter.map((member) => member._id),
+      },
+    ]);
+
     setNewMessage("");
+    const res = await groupApi.sendMessGroup(data);
   };
   const handlerGroupOption = () => {
     navigation.navigate("GroupOption");
   };
-  useEffect(() => {
-    socket.on("receiveMessage", (call) => {
-      console.log("Test from Client FE:", call);
-    });
-  }, [socket]);
+
   const renderItem = ({ item }) => (
-    <Pressable onPress={() => handleSelectMessage(item.idMessenger)}>
+    <Pressable>
       {item.sender !== userSender._id && (
         <View style={{ position: "absolute", top: 15 }}>
           <Avatar
             size={30}
             rounded
-            title={extendFunctions.getAvatarName(userReceiver.name)}
-            containerStyle={{ backgroundColor: userReceiver.avatar.color }}
+            title={extendFunctions.getAvatarName(item.sender.name)}
+            containerStyle={{ backgroundColor: item.sender.avatar.color }}
           />
         </View>
       )}

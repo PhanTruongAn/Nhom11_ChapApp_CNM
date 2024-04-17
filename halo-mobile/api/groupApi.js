@@ -13,6 +13,22 @@ const groupApi = {
     const url = "/add-members";
     return axiosClient.post(url, data);
   },
+  deleteMembers: (data) => {
+    const url = "/delete-members";
+    return axiosClient.post(url, data);
+  },
+  deleteGroup: (data) => {
+    const url = "/delete-group";
+    return axiosClient.post(url, data);
+  },
+  sendMessGroup: (data) => {
+    const url = "/send-mess-group";
+    return axiosClient.post(url, data);
+  },
+  getAllChatGroup: (data) => {
+    const url = "/gel-all-chat-group";
+    return axiosClient.post(url, data);
+  },
 };
 
 export default groupApi;

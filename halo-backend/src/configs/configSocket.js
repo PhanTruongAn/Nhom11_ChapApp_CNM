@@ -50,8 +50,8 @@ const configSocket = (server) => {
           socket.to(clients[index].clientId).emit("refresh", resendData, () => {
             // console.log("Sender:", sender);
             // console.log("Receiver:", receiver);
-            console.log("ResendData:", resendData);
-            console.log("test success");
+            // console.log("ResendData:", resendData);
+            // console.log("test success");
           });
         } else {
           console.log("test error");
@@ -72,7 +72,7 @@ const configSocket = (server) => {
             .emit("cancelSend", resendData, () => {
               // console.log("Sender:", sender);
               // console.log("Receiver:", receiver);
-              console.log("ResendData:", resendData);
+              // console.log("ResendData:", resendData);
             });
         } else {
           console.log("test error");
@@ -93,7 +93,7 @@ const configSocket = (server) => {
             .emit("cancelAdd", resendData, () => {
               // console.log("Sender:", sender);
               // console.log("Receiver:", receiver);
-              console.log("ResendData:", resendData);
+              // console.log("ResendData:", resendData);
             });
         } else {
           console.log("test error");
@@ -114,7 +114,7 @@ const configSocket = (server) => {
             .emit("confirmAdd", resendData, () => {
               // console.log("Sender:", sender);
               // console.log("Receiver:", receiver);
-              console.log("ResendData:", resendData);
+              // console.log("ResendData:", resendData);
             });
         } else {
           // console.log("test error");
@@ -133,7 +133,7 @@ const configSocket = (server) => {
           socket.to(clients[index].clientId).emit("delete", resendData, () => {
             // console.log("Sender:", sender);
             // console.log("Receiver:", receiver);
-            console.log("ResendData:", resendData);
+            // console.log("ResendData:", resendData);
           });
         } else {
           console.log("test error");
@@ -165,7 +165,7 @@ const configSocket = (server) => {
               // console.log("Receiver:", receiver);
               // console.log("Text:", text);
             });
-          console.log("Data resend:", dataResend);
+          // console.log("Data resend:", dataResend);
         } else {
           console.log("test error");
         }
@@ -192,7 +192,7 @@ const configSocket = (server) => {
           socket
             .to(clients[index].clientId)
             .emit("retrieveMes", dataResend, () => {});
-          console.log("Data retrieve:", dataResend);
+          // console.log("Data retrieve:", dataResend);
         } else {
           console.log("test error");
         }
@@ -201,13 +201,6 @@ const configSocket = (server) => {
 
     socket.on("createGroup", (call) => {
       console.log("Callback: ", call);
-      // for (let i = 0; i < call.members.length; i++) {
-      //   let member = call.members[i];
-      //   let index = clients.findIndex((item) => item.customId === member.phone);
-      //   if (index !== -1) {
-      //     socket.to(clients[index].clientId).emit("retrieve", { member });
-      //   }
-      // }
       io.emit("retrieve");
     });
 
@@ -221,8 +214,27 @@ const configSocket = (server) => {
       console.log(`${socket.id}  user disconnected`);
     });
 
-    socket.on("test", (data) => {
-      io.to(data.roomId).emit("receiveMessage", data.messenger);
+    socket.on("sendMessengerInGroup", (data) => {
+      console.log("Callback: ", data);
+      socket.to(data.groupId).emit("test", data);
+    });
+    socket.on("deleteMember", (data) => {
+      console.log("Callback: ", data);
+      if (clients && clients.length > 0) {
+        let index = clients.findIndex(
+          (item) => item.customId.localeCompare(data) === 0
+        );
+        if (index !== -1) {
+          socket.to(clients[index].clientId).emit("retrieveDelete");
+          // console.log("Data retrieve:", dataResend);
+        } else {
+          console.log("test error");
+        }
+      }
+    });
+
+    socket.on("deleteGroup", () => {
+      io.emit("deleteGroup");
     });
   });
 };

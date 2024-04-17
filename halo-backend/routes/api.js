@@ -42,6 +42,10 @@ const initAppRoutes = (app) => {
   router.post("/create-group", groupController.handlerCreateNewGroup);
   router.post("/get-all-group", groupController.handlerGetAllGroup);
   router.post("/add-members", groupController.handlerAddMembers);
+  router.post("/delete-members", groupController.handlerDeleteMembers);
+  router.post("/delete-group", groupController.handlerDeleteMGroup);
+  router.post("/send-mess-group", groupController.handlerSendMessGroup);
+  router.post("/gel-all-chat-group", groupController.handlerGetAllChatGroup);
   return app.use("/", router);
 };
 export default initAppRoutes;

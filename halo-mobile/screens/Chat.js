@@ -8,6 +8,8 @@ import {
   FlatList,
   Modal,
   Text,
+  Alert,
+  Keyboard,
 } from "react-native";
 import {
   AntDesign,
@@ -15,7 +17,7 @@ import {
   Feather,
   MaterialIcons,
 } from "@expo/vector-icons";
-// import ImagePicker from "react-native-image-picker";
+
 import { useNavigation } from "@react-navigation/native";
 import IconPickerModal from "./IconPickerModal";
 import { Avatar } from "@rneui/themed";
@@ -35,20 +37,90 @@ import AWS from "aws-sdk";
 import * as FileSystem from "expo-file-system";
 import { decode } from "base-64";
 import * as Crypto from "expo-crypto";
+const EmojiBoard = ({ onEmojiPick, isVisible, onClose }) => {
+  const emojis = [
+    "😀",
+    "😃",
+    "😄",
+    "😁",
+    "😆",
+    "😅",
+    "😂",
+    "🤣",
+    "😊",
+    "😇",
+    "🙂",
+    "🙃",
+    "😉",
+    "😌",
+    "😍",
+    "🥰",
+    "😘",
+    "😗",
+    "😙",
+    "😚",
+    "😋",
+    "😛",
+    "😜",
+    "🤪",
+    "😝",
+    "🤑",
+    "🤗",
+    "🤭",
+    "🤫",
+    "🤔",
+  ];
+  const emojiWidth = 40; // Đặt chiều rộng của mỗi emoji
+  const emojiSpacing = 10; // Đặt khoảng cách giữa các emoji
+  const snapToInterval = emojiWidth + emojiSpacing;
 
-const ChatScreen = () => {
+  const handleEmojiPick = (emoji) => {
+    onEmojiPick(emoji);
+  };
+
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <View style={styles.emojiBoard}>
+      <View style={styles.emojiContainer}>
+        <FlatList
+          data={emojis}
+          horizontal={true}
+          pagingEnabled={true}
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={snapToInterval}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => handleEmojiPick(item)}
+              style={styles.emojiButton}
+            >
+              <Text style={styles.emojiText}>{item}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Ionicons name="close" size={24} color="black" />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const ChatScreen = ({ navigation }) => {
   const route = useRoute();
   const dispatch = useDispatch();
   const userSender = useSelector((state) => state.userLogin.user);
   const userReceiver = route.params.user;
-
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
-  const [isIconPickerModalVisible, setIconPickerModalVisible] = useState(false);
-  const [receivedMessage, setReceivedMessage] = useState(""); // State để lưu trữ nội dung nhận được
   const [selectedMessage, setSelectedMessage] = useState(null);
-  const [imageURL, setImageURL] = useState();
+  const [selectedIcon, setSelectedIcon] = useState("");
+  const [isEmojiVisible, setEmojiVisible] = useState(false);
+  // const [isIconPickerModalVisible, setIconPickerModalVisible] = useState(false);
+  // const [receivedMessage, setReceivedMessage] = useState("");
 
   const formatTime = (time) => {
     const date = new Date(time);
@@ -65,6 +137,7 @@ const ChatScreen = () => {
     const res = await chatApi.getAllChat(data);
     setMessages(res.DT);
   };
+
   useEffect(() => {
     socket.on("receiveMessenger", (res) => {
       console.log("Res:", res);
@@ -102,10 +175,11 @@ const ChatScreen = () => {
       });
     });
   }, [socket]);
-  const iconRef = useRef(null);
-  const navigation = useNavigation();
 
   const handleImagePick = async () => {
+    setNewMessage("");
+    setEmojiVisible(false);
+    Keyboard.dismiss();
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
@@ -220,7 +294,6 @@ const ChatScreen = () => {
 
           const res = await chatApi.sendMessenger(data);
           setSelectedImage(null);
-          setImageURL(null);
           console.log(res);
         }
       } catch (error) {
@@ -256,11 +329,6 @@ const ChatScreen = () => {
     }
   };
 
-  const handleSendWithLike = () => {
-    // Tương tự như hàm handleSend, bạn có thể thêm logic xử lý khi gửi chat icon thích ở đây
-    // Ví dụ: setMessages([...], setNewMessage(""), setSelectedImage(null), ...);
-  };
-
   // Cập nhật tin nhắn được chọn khi người dùng ấn vào
   const handleSelectMessage = (messageId) => {
     if (selectedMessage === messageId) {
@@ -291,14 +359,21 @@ const ChatScreen = () => {
     retrieveMessenger({ ...data });
     console.log("Data update:", res.DT);
   };
-  const handleOpenIconPicker = () => {
-    setIconPickerModalVisible(true);
+  // Hàm để mở IconPickerModal
+  const handleEmojiPick = (emoji) => {
+    setNewMessage((prev) => prev + emoji);
   };
-
-  const handleIconPick = (selectedIcon) => {
-    // Cập nhật biểu tượng khi người dùng chọn
-    // setSelectedIcon(selectedIcon);
-    // setIconPickerModalVisible(false);
+  const handleCloseEmojiBoard = () => {
+    setEmojiVisible(false);
+  };
+  console.log("Check:", isEmojiVisible);
+  const handleOpenEmojiBoard = () => {
+    if (selectedImage === null) {
+      Keyboard.dismiss();
+      setEmojiVisible(true);
+    } else {
+      Alert.alert("Bạn chỉ có thể gửi ảnh hoặc gửi tin nhắn bình thường");
+    }
   };
   const renderItem = ({ item }) => (
     <Pressable onPress={() => handleSelectMessage(item.idMessenger)}>
@@ -406,11 +481,6 @@ const ChatScreen = () => {
         <TouchableOpacity style={{ position: "absolute", right: 18 }}>
           <Feather name="list" size={25} color="white" />
         </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleSendWithLike}
-          style={styles.likeButton}
-        ></TouchableOpacity>
       </View>
 
       <FlatList
@@ -429,7 +499,7 @@ const ChatScreen = () => {
 
         <TouchableOpacity
           style={styles.iconPickerButton}
-          onPress={handleOpenIconPicker}
+          onPress={handleOpenEmojiBoard}
         >
           <Ionicons name="happy" size={20} color="white" />
         </TouchableOpacity>
@@ -437,8 +507,21 @@ const ChatScreen = () => {
         <TextInput
           style={styles.input}
           placeholder="Type a message..."
-          value={newMessage}
-          onChangeText={(e) => setNewMessage(e)}
+          value={newMessage + selectedIcon}
+          onTouchStart={() => {
+            if (isEmojiVisible === true) {
+              handleCloseEmojiBoard();
+            }
+          }}
+          onChangeText={(e) => {
+            if (selectedImage === null) {
+              setNewMessage(e);
+            } else {
+              Alert.alert(
+                "Bạn chỉ có thể gửi ảnh hoặc gửi tin nhắn bình thường"
+              );
+            }
+          }}
         />
 
         <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
@@ -446,6 +529,16 @@ const ChatScreen = () => {
           <Ionicons name="send" size={20} color="white" />
         </TouchableOpacity>
       </View>
+      {isEmojiVisible && (
+        <View style={styles.emojiBoard}>
+          <EmojiBoard
+            isVisible={isEmojiVisible}
+            onEmojiPick={handleEmojiPick}
+            onClose={handleCloseEmojiBoard}
+          />
+        </View>
+      )}
+
       {selectedImage && (
         <View style={[styles.selectedImageContainer, styles.centeredContent]}>
           <View style={styles.selectedImage}>
@@ -466,22 +559,12 @@ const ChatScreen = () => {
             >
               <Text style={styles.imageButtonText}>Xóa ảnh</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSendImage}
-              style={styles.imageButton}
-            >
+            <TouchableOpacity onPress={handleSend} style={styles.imageButton}>
               <Text style={styles.imageButtonText}>Gửi ảnh</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
-      <Modal
-        visible={isIconPickerModalVisible}
-        transparent={true}
-        animationType="slide"
-      >
-        <IconPickerModal onIconPick={handleIconPick} ref={iconRef} />
-      </Modal>
     </View>
   );
 };
@@ -605,6 +688,30 @@ const styles = StyleSheet.create({
   },
   imageButtonText: {
     color: "white",
+  },
+  emojiBoard: {
+    backgroundColor: "white",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 10,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    marginTop: 10,
+  },
+  emojiContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  emojiButton: {
+    margin: 5,
+  },
+  emojiText: {
+    fontSize: 24,
+  },
+  closeButton: {
+    alignItems: "center",
+    padding: 10,
   },
 });
 

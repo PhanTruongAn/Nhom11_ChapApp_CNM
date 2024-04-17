@@ -12,10 +12,16 @@ import { Avatar } from "@rneui/themed";
 import { useRoute } from "@react-navigation/core";
 import extendFunctions from "../constants/extendFunctions";
 import { useSelector, useDispatch } from "react-redux";
+import groupApi from "../api/groupApi";
+import { initGroup } from "../redux/groupSlice";
+import { deleteMember } from "../redux/groupSlice";
+import { deleteMemberSocket } from "../config/configSocket";
 const MemberGroup = ({ navigation }) => {
+  const dispatch = useDispatch();
   const route = useRoute();
   const user = useSelector((state) => state.userLogin.user);
   const groupOption = useSelector((state) => state.groupsInit.group);
+  console.log("GroupRedux:", groupOption);
   const [tab, setTab] = useState("members");
   const [originalMembers, setOriginalMembers] = useState([
     ...groupOption.members,
@@ -39,9 +45,23 @@ const MemberGroup = ({ navigation }) => {
   };
   const renderUserItem = ({ item }) => {
     const isAuthor = user._id === groupOption.author._id;
+    const isCurrentUser = user._id === item._id;
 
-    const handleDelete = () => {
-      // Thêm logic xử lý khi người dùng nhấn nút xóa ở đây
+    const handleDelete = async () => {
+      const data = {
+        _id: groupOption._id,
+        member: item,
+      };
+      const res = await groupApi.deleteMembers(data);
+      if (res) {
+        dispatch(initGroup(res.DT));
+        deleteMemberSocket(item.phone);
+        const updatedMembers = originalMembers.filter(
+          (member) => member._id !== item._id
+        );
+        setOriginalMembers(updatedMembers);
+        setMembers(updatedMembers);
+      }
     };
 
     return (
@@ -62,34 +82,35 @@ const MemberGroup = ({ navigation }) => {
           <Text style={{ fontSize: 16, fontWeight: "500", marginLeft: 20 }}>
             {item.name}
           </Text>
-          {isAuthor && (
-            <TouchableOpacity
-              style={{
-                width: 50,
-                height: 40,
-                backgroundColor: "red",
-                borderRadius: 10,
-                justifyContent: "center",
-                position: "relative",
-              }}
-            >
-              <Text
+          {!isCurrentUser &&
+            isAuthor && ( // Chỉ hiển thị nút Xóa nếu không phải là người dùng hiện tại và là tác giả
+              <TouchableOpacity
                 style={{
-                  fontSize: 16,
-                  fontWeight: "600",
-                  alignSelf: "center",
-                  color: "white",
+                  width: 50,
+                  height: 40,
+                  backgroundColor: "red",
+                  borderRadius: 10,
+                  justifyContent: "center",
+                  position: "relative",
                 }}
+                onPress={handleDelete}
               >
-                Xóa
-              </Text>
-            </TouchableOpacity>
-          )}
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "600",
+                    alignSelf: "center",
+                    color: "white",
+                  }}
+                >
+                  Xóa
+                </Text>
+              </TouchableOpacity>
+            )}
         </View>
       </TouchableOpacity>
     );
   };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>

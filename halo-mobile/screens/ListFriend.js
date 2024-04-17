@@ -148,7 +148,7 @@ const FriendListScreen = ({ navigation }) => {
   );
 };
 
-const FriendListComponent = () => {
+const FriendListComponent = ({ navigation }) => {
   const user = useSelector((state) => state.userLogin.user);
   const dispatch = useDispatch();
   return (
@@ -170,6 +170,24 @@ const FriendListComponent = () => {
             )}
           </View>
           <Text style={styles.itemText}>{item.name}</Text>
+          <TouchableOpacity
+            style={{
+              width: 70,
+              height: 40,
+              justifyContent: "center",
+              backgroundColor: "green",
+              borderRadius: 10,
+              position: "absolute",
+              right: 90,
+            }}
+            onPress={() => {
+              navigation.navigate("ChatScreen", { user: item });
+            }}
+          >
+            <Text style={{ fontSize: 16, alignSelf: "center", color: "white" }}>
+              Nhắn tin
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={{
               width: 70,
@@ -199,7 +217,6 @@ const FriendListComponent = () => {
               const req = await friendApi.deleteFriend(data);
               console.log("CheckReq:", req);
               dispatch(updateUser(req.DT));
-              // await AsyncStorage.setItem("login", JSON.stringify(req.DT));
             }}
           >
             <Text style={{ fontSize: 16, alignSelf: "center", color: "white" }}>
@@ -374,11 +391,13 @@ const GroupListComponent = ({ navigation }) => {
   const dispatch = useDispatch();
   const [group, setGroup] = useState([]);
   useEffect(() => {
-    socket.on("retrieve", async (call) => {
-      const memberId = {
-        _id: call.member._id,
-      };
-      // getAllGroup(memberId);
+    socket.on("retrieve", async () => {
+      getAllGroup(user);
+    });
+    socket.on("retrieveDelete", () => {
+      getAllGroup(user);
+    });
+    socket.on("deleteGroup", () => {
       getAllGroup(user);
     });
   }, [socket]);
