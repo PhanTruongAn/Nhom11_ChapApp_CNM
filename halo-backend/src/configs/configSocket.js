@@ -215,8 +215,11 @@ const configSocket = (server) => {
     });
 
     socket.on("sendMessengerInGroup", (data) => {
-      console.log("Callback: ", data);
       socket.to(data.groupId).emit("test", data);
+    });
+    socket.on("retrieveMessGroup", (data) => {
+      // console.log("CallbackRetrieve: ", data);
+      socket.to(data.group).emit("RetrieveMessGroup", data);
     });
     socket.on("deleteMember", (data) => {
       console.log("Callback: ", data);

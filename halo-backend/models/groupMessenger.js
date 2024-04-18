@@ -12,6 +12,32 @@ const GroupMessengerSchema = new mongoose.Schema(
       ref: "Group",
       required: true,
     },
+    receiver: [
+      {
+        _id: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        name: {
+          type: String,
+          required: true,
+        },
+        phone: {
+          type: String,
+        },
+        email: {
+          type: String,
+        },
+        avatar: {
+          uri: {
+            type: String,
+          },
+          color: {
+            type: String,
+          },
+        },
+      },
+    ],
     text: {
       type: String,
       required: true,

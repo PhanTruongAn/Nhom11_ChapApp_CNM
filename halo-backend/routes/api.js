@@ -46,6 +46,11 @@ const initAppRoutes = (app) => {
   router.post("/delete-group", groupController.handlerDeleteMGroup);
   router.post("/send-mess-group", groupController.handlerSendMessGroup);
   router.post("/gel-all-chat-group", groupController.handlerGetAllChatGroup);
+  router.post(
+    "/retrieve-message-group",
+    groupController.handlerRetrieveMessenger
+  );
+
   return app.use("/", router);
 };
 export default initAppRoutes;

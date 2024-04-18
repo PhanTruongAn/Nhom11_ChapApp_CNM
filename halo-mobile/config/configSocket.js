@@ -82,6 +82,9 @@ const deleteMemberSocket = (data) => {
 const deleteGroupSocket = (data) => {
   socket.emit("deleteGroup", data);
 };
+const retrieveMessGroup = (data) => {
+  socket.emit("retrieveMessGroup", data);
+};
 export default socket;
 export {
   handleCustomClient,
@@ -104,4 +107,5 @@ export {
   sendMessInGroup,
   deleteMemberSocket,
   deleteGroupSocket,
+  retrieveMessGroup,
 };

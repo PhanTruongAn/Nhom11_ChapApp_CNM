@@ -21,9 +21,7 @@ import { Avatar } from "@rneui/themed";
 import extendFunctions from "../constants/extendFunctions";
 import { useRoute } from "@react-navigation/core";
 import { useDispatch, useSelector } from "react-redux";
-import { senderMessenger } from "../config/configSocket";
-import { receiveMessenger } from "../config/configSocket";
-import { retrieveMessenger } from "../config/configSocket";
+import { retrieveMessGroup } from "../config/configSocket";
 import socket from "../config/configSocket";
 import chatApi from "../api/chatApi";
 import { lastMessenger } from "../redux/conversationSlice";
@@ -64,33 +62,6 @@ const ChatGroup = ({ navigation }) => {
 
     setMessages(res.DT);
   };
-  // useEffect(() => {
-  //   socket.on("receiveMessage", (res) => {
-  //     const filter = [...res.receiver, res.sender];
-  //     console.log("Filter:", filter);
-  //     setMessages((prevState) => [
-  //       ...prevState,
-  //       {
-  //         idMessenger: res.idMessenger,
-  //         sender: userReceiver._id,
-  //         groupId: res.groupId,
-  //         isDeleted: res.isDeleted,
-  //         text: res.text,
-  //         createdAt: res.createdAt,
-  //         receiver: userSender._id,
-  //       },
-  //     ]);
-  //     getAllChat();
-  //   });
-  //   socket.on("retrieveDelete", (call) => {
-  //     alert("Bạn đã bị xóa khỏi nhóm");
-  //     navigation.navigate("ChatList");
-  //   });
-  //   socket.on("deleteGroup", (call) => {
-  //     alert("Nhóm đã bị xóa");
-  //     navigation.navigate("ChatList");
-  //   });
-  // }, [socket]);
 
   useEffect(() => {
     socket.on("test", (res) => {
@@ -100,17 +71,37 @@ const ChatGroup = ({ navigation }) => {
           idMessenger: res.idMessenger,
           sender: res.sender,
           groupId: res.groupId,
+          isDeleted: res.isDeleted,
           text: res.text,
           createdAt: res.createdAt,
           receiver: res.receiver,
         },
       ]);
     });
+    socket.on("RetrieveMessGroup", (res) => {
+      setMessages((prevState) => {
+        const updatedMessages = prevState.map((message) => {
+          if (message.idMessenger === res.idMessenger) {
+            return {
+              ...message,
+              isDeleted: res.isDeleted,
+            };
+          }
+          return message;
+        });
+        return updatedMessages;
+      });
+    });
+    socket.on("retrieveDelete", (call) => {
+      alert("Bạn đã bị xóa khỏi nhóm " + `${groupData.name}`);
+      navigation.navigate("ChatList");
+    });
+    socket.on("deleteGroup", (call) => {
+      alert("Nhóm " + `${groupData.name}` + "đã bị xóa");
+      navigation.navigate("ChatList");
+    });
     getAllChat();
   }, [socket]);
-  useEffect(() => {
-    getAllChat();
-  }, []);
 
   console.log("Messages:", messages);
   const formatTime = (time) => {
@@ -133,16 +124,17 @@ const ChatGroup = ({ navigation }) => {
     const data = {
       idMessenger: await generateUUID(),
       sender: userSender._id,
+      isDeleted: false,
       groupId: groupData._id,
       text: newMessage,
       createdAt: Date.now(),
+      receiver: memberFilter,
     };
 
     // Gửi tin nhắn qua socket
     sendMessInGroup({
       ...data,
       sender: userSender,
-      receiver: memberFilter,
       isDeleted: false,
     });
 
@@ -151,24 +143,55 @@ const ChatGroup = ({ navigation }) => {
       ...prevState,
       {
         idMessenger: data.idMessenger,
-        sender: data.sender,
+        sender: userSender,
+        isDeleted: data.isDeleted,
         groupId: data.groupId,
         text: data.text,
         createdAt: data.createdAt,
-        receiver: memberFilter.map((member) => member._id),
       },
     ]);
 
     setNewMessage("");
+    console.log("Data:", data);
     const res = await groupApi.sendMessGroup(data);
   };
   const handlerGroupOption = () => {
     navigation.navigate("GroupOption");
   };
+  const handleSelectMessage = (messageId) => {
+    if (selectedMessage === messageId) {
+      // Nếu tin nhắn đã được chọn rồi, ẩn nó đi
+      setSelectedMessage(null);
+    } else {
+      // Nếu tin nhắn chưa được chọn, hiển thị nó
+      setSelectedMessage(messageId);
+    }
+  };
 
+  const handleDeleteMessage = async (messageId) => {
+    const updatedMessages = messages.map((message) => {
+      if (message.idMessenger === messageId) {
+        return { ...message, isDeleted: true };
+      }
+      return message;
+    });
+    const user = {
+      idMessenger: selectedMessage,
+    };
+    console.log("IdMess:", selectedMessage);
+    setMessages(updatedMessages);
+    const res = await groupApi.retrieveMessage(user);
+    console.log("Data update:", res.DT);
+    // const data = {
+    //   ...res.DT,
+    //   sender: userSender.phone,
+    //   receiver: userReceiver.phone,
+    // };
+    retrieveMessGroup({ ...res.DT, sender: userSender });
+  };
   const renderItem = ({ item }) => (
-    <Pressable>
-      {item.sender !== userSender._id && (
+    <Pressable onPress={() => handleSelectMessage(item.idMessenger)}>
+      {item.sender._id !== userSender._id && (
         <View style={{ position: "absolute", top: 15 }}>
           <Avatar
             size={30}
@@ -180,12 +203,12 @@ const ChatGroup = ({ navigation }) => {
       )}
       <View
         style={
-          item.sender === userSender._id
+          item.sender === userSender._id || item.sender._id === userSender._id
             ? styles.sentMessage
             : styles.receivedMessage
         }
       >
-        {item.sender === userSender._id &&
+        {item.sender._id === userSender._id &&
           selectedMessage === item.idMessenger && (
             <View
               style={{

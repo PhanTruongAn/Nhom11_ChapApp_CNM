@@ -256,6 +256,7 @@ const findDistinctUsers = async (user) => {
 };
 const retrieveMessenger = async (user) => {
   const idMessenger = user.idMessenger;
+
   try {
     const res = await PrivateMessenger.findOneAndUpdate(
       { idMessenger: idMessenger },

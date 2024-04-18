@@ -11,6 +11,7 @@ const sendMessageGroup = async (data) => {
         sender: sender,
         group: group,
         text: data.text,
+        receiver: data.receiver,
       });
       const chatData = await chat.save();
       return {
@@ -41,8 +42,6 @@ const getAllChatGroup = async (group) => {
       //   .limit(5)
       .populate("sender", "_id name phone email avatar.uri avatar.color")
       .exec();
-
-    console.log("Data:", data);
     return {
       EM: "Get all messenger is success!",
       EC: 0,
@@ -56,7 +55,40 @@ const getAllChatGroup = async (group) => {
     };
   }
 };
+const retrieveMessenger = async (user) => {
+  const idMessenger = user.idMessenger;
+
+  try {
+    const res = await GroupMessenger.findOneAndUpdate(
+      { idMessenger: idMessenger },
+      {
+        $set: {
+          isDeleted: true,
+        },
+      },
+      {
+        new: true,
+        select: "idMessenger receiver text group isDeleted createdAt", // Loại bỏ trường "sender" ở đây
+      }
+    );
+
+    if (!res) {
+      console.log("Không tìm thấy tin nhắn!");
+      return null;
+    }
+
+    return {
+      DT: res,
+      EC: 0,
+    };
+  } catch (error) {
+    console.error("Lỗi từ server:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   sendMessageGroup,
   getAllChatGroup,
+  retrieveMessenger,
 };

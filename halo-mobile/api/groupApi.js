@@ -29,6 +29,10 @@ const groupApi = {
     const url = "/gel-all-chat-group";
     return axiosClient.post(url, data);
   },
+  retrieveMessage: (data) => {
+    const url = "/retrieve-message-group";
+    return axiosClient.post(url, data);
+  },
 };
 
 export default groupApi;
