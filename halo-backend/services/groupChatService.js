@@ -38,8 +38,8 @@ const sendMessageGroup = async (data) => {
 const getAllChatGroup = async (group) => {
   try {
     const data = await GroupMessenger.find({ group: group.groupId })
-      //   .sort({ createdAt: "desc" })
-      //   .limit(5)
+      // .sort({ createdAt: "desc" })
+      // .limit(3)
       .populate("sender", "_id name phone email avatar.uri avatar.color")
       .exec();
     return {

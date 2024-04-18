@@ -8,6 +8,8 @@ import {
   FlatList,
   Modal,
   Text,
+  Keyboard,
+  Alert,
 } from "react-native";
 import {
   AntDesign,
@@ -15,7 +17,7 @@ import {
   Feather,
   MaterialIcons,
 } from "@expo/vector-icons";
-// import ImagePicker from "react-native-image-picker";
+
 import IconPickerModal from "./IconPickerModal";
 import { Avatar } from "@rneui/themed";
 import extendFunctions from "../constants/extendFunctions";
@@ -34,6 +36,77 @@ import { decode } from "base-64";
 import * as Crypto from "expo-crypto";
 import { sendMessInGroup } from "../config/configSocket";
 import groupApi from "../api/groupApi";
+import Constants from "expo-constants";
+const EmojiBoard = ({ onEmojiPick, isVisible, onClose }) => {
+  const emojis = [
+    "😀",
+    "😃",
+    "😄",
+    "😁",
+    "😆",
+    "😅",
+    "😂",
+    "🤣",
+    "😊",
+    "😇",
+    "🙂",
+    "🙃",
+    "😉",
+    "😌",
+    "😍",
+    "🥰",
+    "😘",
+    "😗",
+    "😙",
+    "😚",
+    "😋",
+    "😛",
+    "😜",
+    "🤪",
+    "😝",
+    "🤑",
+    "🤗",
+    "🤭",
+    "🤫",
+    "🤔",
+  ];
+  const emojiWidth = 40; // Đặt chiều rộng của mỗi emoji
+  const emojiSpacing = 10; // Đặt khoảng cách giữa các emoji
+  const snapToInterval = emojiWidth + emojiSpacing;
+
+  const handleEmojiPick = (emoji) => {
+    onEmojiPick(emoji);
+  };
+
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <View style={styles.emojiBoard}>
+      <View style={styles.emojiContainer}>
+        <FlatList
+          data={emojis}
+          horizontal={true}
+          pagingEnabled={true}
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={snapToInterval}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => handleEmojiPick(item)}
+              style={styles.emojiButton}
+            >
+              <Text style={styles.emojiText}>{item}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Ionicons name="close" size={24} color="black" />
+      </TouchableOpacity>
+    </View>
+  );
+};
 const ChatGroup = ({ navigation }) => {
   const route = useRoute();
   const dispatch = useDispatch();
@@ -45,8 +118,9 @@ const ChatGroup = ({ navigation }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isIconPickerModalVisible, setIconPickerModalVisible] = useState(false);
   const [receivedMessage, setReceivedMessage] = useState(""); // State để lưu trữ nội dung nhận được
+  const [selectedIcon, setSelectedIcon] = useState("");
   const [selectedMessage, setSelectedMessage] = useState(null);
-  const [imageURL, setImageURL] = useState();
+  const [isEmojiVisible, setEmojiVisible] = useState(false);
   const [members, setMembers] = useState([
     ...groupData.members,
     groupData.author,
@@ -110,6 +184,79 @@ const ChatGroup = ({ navigation }) => {
     const minutes = date.getMinutes();
     return `${hours}:${minutes}`;
   };
+  //Chon anh
+  const handleImagePick = async () => {
+    setNewMessage("");
+    setEmojiVisible(false);
+    Keyboard.dismiss();
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.cancelled) {
+      setSelectedImage(result.uri);
+      console.log("Hình ảnh đã được chọn:", result.uri);
+    }
+  };
+
+  const handleDeleteImage = () => {
+    setSelectedImage(null);
+  };
+  // Thực hiện cấu hình AWS SDK với thông tin xác thực của bạn
+  const { ACCESS_KEY, SECRET_KEY, REGION } = Constants.manifest.extra;
+  AWS.config.update({
+    accessKeyId: ACCESS_KEY,
+    secretAccessKey: SECRET_KEY,
+    region: REGION,
+  });
+
+  const s3 = new AWS.S3();
+
+  const handlerUpdateImageToS3 = async (selectedImage) => {
+    try {
+      const imageUri = selectedImage;
+      const imageInfo = await FileSystem.getInfoAsync(imageUri);
+      const imageBase64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Chuyển dữ liệu base64 thành ArrayBuffer
+      const arrayBuffer = base64ToArrayBuffer(imageBase64);
+
+      const fileName = `${userSender._id}-${Date.now()}.jpg`;
+
+      const params = {
+        Bucket: "imagemessagehalo",
+        Key: fileName,
+        Body: arrayBuffer,
+        ContentType: imageInfo.mimeType,
+      };
+      const imageUrl = await s3
+        .upload(params)
+        .promise()
+        .then((data) => data.Location);
+      console.log("Upload hình ảnh thành công:", imageUrl);
+      return imageUrl; // Trả về giá trị imageUrl cho hàm gọi
+    } catch (error) {
+      Alert.alert("Có lỗi xảy ra khi tải ảnh lên");
+      return null; // Trả về null nếu có lỗi
+    }
+  };
+
+  // Hàm chuyển đổi base64 thành ArrayBuffer
+  const base64ToArrayBuffer = (base64) => {
+    const binaryString = decode(base64);
+    const length = binaryString.length;
+    const bytes = new Uint8Array(length);
+
+    for (let i = 0; i < length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    return bytes.buffer;
+  };
   const generateUUID = async () => {
     const randomBytes = await Crypto.getRandomBytesAsync(16);
     const uuid = Array.from(new Uint8Array(randomBytes))
@@ -121,39 +268,86 @@ const ChatGroup = ({ navigation }) => {
     )}-${uuid.substr(16, 4)}-${uuid.substr(20)}`;
   };
   const handleSend = async () => {
-    const data = {
-      idMessenger: await generateUUID(),
-      sender: userSender._id,
-      isDeleted: false,
-      groupId: groupData._id,
-      text: newMessage,
-      createdAt: Date.now(),
-      receiver: memberFilter,
-    };
+    console.log("anh sau khi an gui:", selectedImage);
+    if (selectedImage != null) {
+      try {
+        const imageUrl = await handlerUpdateImageToS3(selectedImage);
+        console.log("link anh:", imageUrl);
 
-    // Gửi tin nhắn qua socket
-    sendMessInGroup({
-      ...data,
-      sender: userSender,
-      isDeleted: false,
-    });
+        if (imageUrl) {
+          const data = {
+            idMessenger: await generateUUID(),
+            sender: userSender._id,
+            isDeleted: false,
+            groupId: groupData._id,
+            text: `${imageUrl}`,
+            createdAt: Date.now(),
+            receiver: memberFilter,
+          };
 
-    // Cập nhật UI ngay lập tức
-    setMessages((prevState) => [
-      ...prevState,
-      {
-        idMessenger: data.idMessenger,
+          // Gửi tin nhắn qua socket
+          sendMessInGroup({
+            ...data,
+            sender: userSender,
+            isDeleted: false,
+          });
+
+          // Cập nhật UI ngay lập tức
+          setMessages((prevState) => [
+            ...prevState,
+            {
+              idMessenger: data.idMessenger,
+              sender: userSender,
+              isDeleted: data.isDeleted,
+              groupId: data.groupId,
+              text: data.text,
+              createdAt: data.createdAt,
+            },
+          ]);
+
+          setNewMessage("");
+          console.log("Data:", data);
+          const res = await groupApi.sendMessGroup(data);
+          setSelectedImage(null);
+        }
+      } catch (error) {
+        console.error("Lỗi khi gửi tin nhắn kèm hình ảnh:", error);
+      }
+    } else if (newMessage.trim() !== "") {
+      const data = {
+        idMessenger: await generateUUID(),
+        sender: userSender._id,
+        isDeleted: false,
+        groupId: groupData._id,
+        text: newMessage,
+        createdAt: Date.now(),
+        receiver: memberFilter,
+      };
+
+      // Gửi tin nhắn qua socket
+      sendMessInGroup({
+        ...data,
         sender: userSender,
-        isDeleted: data.isDeleted,
-        groupId: data.groupId,
-        text: data.text,
-        createdAt: data.createdAt,
-      },
-    ]);
+        isDeleted: false,
+      });
 
-    setNewMessage("");
-    console.log("Data:", data);
-    const res = await groupApi.sendMessGroup(data);
+      // Cập nhật UI ngay lập tức
+      setMessages((prevState) => [
+        ...prevState,
+        {
+          idMessenger: data.idMessenger,
+          sender: userSender,
+          isDeleted: data.isDeleted,
+          groupId: data.groupId,
+          text: data.text,
+          createdAt: data.createdAt,
+        },
+      ]);
+
+      setNewMessage("");
+      console.log("Data:", data);
+      const res = await groupApi.sendMessGroup(data);
+    }
   };
   const handlerGroupOption = () => {
     navigation.navigate("GroupOption");
@@ -188,6 +382,24 @@ const ChatGroup = ({ navigation }) => {
     //   receiver: userReceiver.phone,
     // };
     retrieveMessGroup({ ...res.DT, sender: userSender });
+  };
+  // Hàm để mở IconPickerModal
+  const handleEmojiPick = (emoji) => {
+    setNewMessage((prev) => prev + emoji);
+  };
+  const handleCloseEmojiBoard = () => {
+    setEmojiVisible(false);
+  };
+  console.log("Check:", isEmojiVisible);
+  const handleOpenEmojiBoard = () => {
+    if (selectedImage === null) {
+      Keyboard.dismiss();
+      setEmojiVisible(true);
+    } else {
+      Alert.alert(
+        "Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi tin nhắn bình thường"
+      );
+    }
   };
   const renderItem = ({ item }) => (
     <Pressable onPress={() => handleSelectMessage(item.idMessenger)}>
@@ -310,14 +522,14 @@ const ChatGroup = ({ navigation }) => {
       <View style={styles.inputContainer}>
         <TouchableOpacity
           style={styles.imagePickerButton}
-          // onPress={handleImagePick}
+          onPress={handleImagePick}
         >
           <Ionicons name="image" size={20} color="white" />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.iconPickerButton}
-          // onPress={handleOpenIconPicker}
+          onPress={handleOpenEmojiBoard}
         >
           <Ionicons name="happy" size={20} color="white" />
         </TouchableOpacity>
@@ -325,8 +537,21 @@ const ChatGroup = ({ navigation }) => {
         <TextInput
           style={styles.input}
           placeholder="Type a message..."
-          value={newMessage}
-          onChangeText={(e) => setNewMessage(e)}
+          value={newMessage + selectedIcon}
+          onTouchStart={() => {
+            if (isEmojiVisible === true) {
+              handleCloseEmojiBoard();
+            }
+          }}
+          onChangeText={(e) => {
+            if (selectedImage === null) {
+              setNewMessage(e);
+            } else {
+              Alert.alert(
+                "Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi tin nhắn bình thường"
+              );
+            }
+          }}
         />
 
         <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
@@ -334,6 +559,15 @@ const ChatGroup = ({ navigation }) => {
           <Ionicons name="send" size={20} color="white" />
         </TouchableOpacity>
       </View>
+      {isEmojiVisible && (
+        <View style={styles.emojiBoard}>
+          <EmojiBoard
+            isVisible={isEmojiVisible}
+            onEmojiPick={handleEmojiPick}
+            onClose={handleCloseEmojiBoard}
+          />
+        </View>
+      )}
       {selectedImage && (
         <View style={[styles.selectedImageContainer, styles.centeredContent]}>
           <View style={styles.selectedImage}>
@@ -354,10 +588,7 @@ const ChatGroup = ({ navigation }) => {
             >
               <Text style={styles.imageButtonText}>Xóa ảnh</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              // onPress={handleSendImage}
-              style={styles.imageButton}
-            >
+            <TouchableOpacity onPress={handleSend} style={styles.imageButton}>
               <Text style={styles.imageButtonText}>Gửi ảnh</Text>
             </TouchableOpacity>
           </View>
@@ -493,6 +724,30 @@ const styles = StyleSheet.create({
   },
   imageButtonText: {
     color: "white",
+  },
+  emojiBoard: {
+    backgroundColor: "white",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 10,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    marginTop: 10,
+  },
+  emojiContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  emojiButton: {
+    margin: 5,
+  },
+  emojiText: {
+    fontSize: 24,
+  },
+  closeButton: {
+    alignItems: "center",
+    padding: 10,
   },
 });
 

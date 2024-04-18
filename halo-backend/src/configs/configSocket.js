@@ -217,6 +217,7 @@ const configSocket = (server) => {
     socket.on("sendMessengerInGroup", (data) => {
       socket.to(data.groupId).emit("test", data);
     });
+
     socket.on("retrieveMessGroup", (data) => {
       // console.log("CallbackRetrieve: ", data);
       socket.to(data.group).emit("RetrieveMessGroup", data);

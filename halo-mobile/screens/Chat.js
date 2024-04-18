@@ -37,6 +37,7 @@ import AWS from "aws-sdk";
 import * as FileSystem from "expo-file-system";
 import { decode } from "base-64";
 import * as Crypto from "expo-crypto";
+import Constants from "expo-constants";
 const EmojiBoard = ({ onEmojiPick, isVisible, onClose }) => {
   const emojis = [
     "😀",
@@ -108,7 +109,7 @@ const EmojiBoard = ({ onEmojiPick, isVisible, onClose }) => {
   );
 };
 
-const ChatScreen = ({ navigation }) => {
+const ChatScreen = () => {
   const route = useRoute();
   const dispatch = useDispatch();
   const userSender = useSelector((state) => state.userLogin.user);
@@ -116,11 +117,11 @@ const ChatScreen = ({ navigation }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isIconPickerModalVisible, setIconPickerModalVisible] = useState(false);
+  const [receivedMessage, setReceivedMessage] = useState("");
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [selectedIcon, setSelectedIcon] = useState("");
   const [isEmojiVisible, setEmojiVisible] = useState(false);
-  // const [isIconPickerModalVisible, setIconPickerModalVisible] = useState(false);
-  // const [receivedMessage, setReceivedMessage] = useState("");
 
   const formatTime = (time) => {
     const date = new Date(time);
@@ -137,7 +138,6 @@ const ChatScreen = ({ navigation }) => {
     const res = await chatApi.getAllChat(data);
     setMessages(res.DT);
   };
-
   useEffect(() => {
     socket.on("receiveMessenger", (res) => {
       console.log("Res:", res);
@@ -175,6 +175,8 @@ const ChatScreen = ({ navigation }) => {
       });
     });
   }, [socket]);
+  const iconRef = useRef(null);
+  const navigation = useNavigation();
 
   const handleImagePick = async () => {
     setNewMessage("");
@@ -196,13 +198,12 @@ const ChatScreen = ({ navigation }) => {
     setSelectedImage(null);
   };
 
-  // Hàm xử lý gửi
-  const handleSendImage = () => {};
   // Thực hiện cấu hình AWS SDK với thông tin xác thực của bạn
+  const { ACCESS_KEY, SECRET_KEY, REGION } = Constants.manifest.extra;
   AWS.config.update({
-    accessKeyId: process.env.ACCESS_KEY,
-    secretAccessKey: process.env.SECRET_KEY,
-    region: process.env.REGION,
+    accessKeyId: ACCESS_KEY,
+    secretAccessKey: SECRET_KEY,
+    region: REGION,
   });
 
   const s3 = new AWS.S3();
@@ -214,7 +215,6 @@ const ChatScreen = ({ navigation }) => {
       const imageBase64 = await FileSystem.readAsStringAsync(imageUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-
       // Chuyển dữ liệu base64 thành ArrayBuffer
       const arrayBuffer = base64ToArrayBuffer(imageBase64);
 
@@ -281,7 +281,7 @@ const ChatScreen = ({ navigation }) => {
             {
               ...data,
               sender: userSender._id,
-              text: `${imageUrl}`,
+              text: data.text,
               receiver: userReceiver._id,
               isDeleted: false,
             },
@@ -372,7 +372,9 @@ const ChatScreen = ({ navigation }) => {
       Keyboard.dismiss();
       setEmojiVisible(true);
     } else {
-      Alert.alert("Bạn chỉ có thể gửi ảnh hoặc gửi tin nhắn bình thường");
+      Alert.alert(
+        "Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi tin nhắn bình thường"
+      );
     }
   };
   const renderItem = ({ item }) => (
@@ -518,7 +520,7 @@ const ChatScreen = ({ navigation }) => {
               setNewMessage(e);
             } else {
               Alert.alert(
-                "Bạn chỉ có thể gửi ảnh hoặc gửi tin nhắn bình thường"
+                "Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi tin nhắn bình thường"
               );
             }
           }}

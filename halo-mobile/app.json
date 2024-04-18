@@ -34,6 +34,11 @@
           "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "ACCESS_KEY": "AKIA3FLD5WKWQT5KBUEW",
+      "SECRET_KEY": "jKszNDx1riad7tZsecHbVQGQik5hOonW9j6YDg5j",
+      "REGION": "ap-southeast-1"
+    }
   }
 }

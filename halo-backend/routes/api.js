@@ -4,6 +4,7 @@ import userService from "../services/userServices";
 import friendController from "../controllers/friendController";
 import chatController from "../controllers/chatController";
 import groupController from "../controllers/groupController";
+import gifController from "../controllers/gifController";
 // import { checkCookie } from "../middleware/jwtMiddleware";
 const router = express.Router();
 /**
@@ -51,6 +52,9 @@ const initAppRoutes = (app) => {
     groupController.handlerRetrieveMessenger
   );
 
+  // Gif Route
+  router.post("/add-gif", gifController.handlerAddGif);
+  router.post("/get-all-gif", gifController.handlerGetAllGif);
   return app.use("/", router);
 };
 export default initAppRoutes;

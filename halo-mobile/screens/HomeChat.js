@@ -158,7 +158,9 @@ const ChatListScreen = ({ navigation }) => {
       </View>
       <View style={styles.info}>
         <Text style={styles.time}>
-          {handlerTime(item.lastMessageTime)} phút
+          {item.lastMessageTime
+            ? `${handlerTime(item.lastMessageTime)} phút`
+            : ""}
         </Text>
         {item.unreadCount > 0 && (
           <View style={styles.unreadBadge}>
