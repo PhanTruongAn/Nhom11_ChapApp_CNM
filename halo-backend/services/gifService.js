@@ -33,4 +33,4 @@ const addGif = async (gifArray) => {
     };
   }
 };
-module.exports = { addGif };
+module.exports = { addGif, getAllGif };

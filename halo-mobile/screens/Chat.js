@@ -38,6 +38,8 @@ import * as FileSystem from "expo-file-system";
 import { decode } from "base-64";
 import * as Crypto from "expo-crypto";
 import Constants from "expo-constants";
+import gifApi from "../api/gifApi";
+
 const EmojiBoard = ({ onEmojiPick, isVisible, onClose }) => {
   const emojis = [
     "😀",
@@ -108,7 +110,38 @@ const EmojiBoard = ({ onEmojiPick, isVisible, onClose }) => {
     </View>
   );
 };
+const GifBoard = ({ onGifPick, isVisible, onClose, allGif }) => {
+  const [selectedGif, setSelectedGif] = useState(null);
 
+  const handleGifPick = (gif) => {
+    setSelectedGif(gif);
+    onGifPick(gif);
+  };
+
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <View style={styles.gifBoard}>
+      <FlatList
+        data={allGif}
+        horizontal={true}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => handleGifPick(item.uri)}
+            style={styles.gifButton}
+          >
+            <Image source={{ uri: item.uri }} style={styles.gifImage} />
+          </TouchableOpacity>
+        )}
+      />
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Text>Close</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 const ChatScreen = () => {
   const route = useRoute();
   const dispatch = useDispatch();
@@ -122,6 +155,14 @@ const ChatScreen = () => {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [selectedIcon, setSelectedIcon] = useState("");
   const [isEmojiVisible, setEmojiVisible] = useState(false);
+  const [allGif, setAllGif] = useState([]);
+  const getGiff = async () => {
+    const result = await gifApi.getAllGif();
+    setAllGif(result.DT);
+  };
+  useEffect(() => {
+    getGiff();
+  }, []);
 
   const formatTime = (time) => {
     const date = new Date(time);
@@ -182,6 +223,7 @@ const ChatScreen = () => {
     setNewMessage("");
     setEmojiVisible(false);
     Keyboard.dismiss();
+    setGifModalVisible(false);
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
@@ -371,10 +413,62 @@ const ChatScreen = () => {
     if (selectedImage === null) {
       Keyboard.dismiss();
       setEmojiVisible(true);
+      setGifModalVisible(false);
     } else {
       Alert.alert(
         "Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi tin nhắn bình thường"
       );
+    }
+  };
+  const [isGifModalVisible, setGifModalVisible] = useState(false);
+  // Hàm mở Modal chứa danh sách gif
+  const handleOpenGifModal = () => {
+    setGifModalVisible(true);
+    Keyboard.dismiss();
+    setEmojiVisible(false);
+    if (selectedImage !== null) {
+      Alert.alert("Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi gif");
+      setGifModalVisible(false);
+    }
+  };
+
+  // Hàm đóng Modal chứa danh sách gif
+  const handleCloseGifModal = () => {
+    setGifModalVisible(false);
+  };
+  const [selectedGif, setSelectedGif] = useState(null);
+  const handleGifPick = async (gif) => {
+    try {
+      setGifModalVisible(false);
+      const data = {
+        idMessenger: await generateUUID(),
+        sender: userSender.phone,
+        receiver: userReceiver.phone,
+        text: `${gif}`,
+        createdAt: Date.now(),
+      };
+
+      setMessages([
+        ...messages,
+        {
+          ...data,
+          sender: userSender._id,
+          text: data.text,
+          receiver: userReceiver._id,
+          isDeleted: false,
+        },
+      ]);
+
+      senderMessenger({
+        ...data,
+        isDeleted: false,
+      });
+
+      const res = await chatApi.sendMessenger(data);
+      setSelectedGif(null);
+      console.log(res);
+    } catch (error) {
+      console.error("Lỗi khi gửi gif:", error);
     }
   };
   const renderItem = ({ item }) => (
@@ -430,17 +524,23 @@ const ChatScreen = () => {
 
         {item.text.includes(
           "https://imagemessagehalo.s3.ap-southeast-1.amazonaws.com"
+        ) ||
+        item.text.includes(
+          "https://gifchathalo.s3.ap-southeast-1.amazonaws.com"
         ) ? (
           item.isDeleted ? (
             <Text style={styles.messageContent}>Tin nhắn đã thu hồi</Text>
           ) : (
-            <View style={{ width: 150, height: 200, marginBottom: 10 }}>
+            <View style={{ width: 150, height: 200, marginRight: 10 }}>
               <Image
-                source={{ uri: item.text }}
+                source={{
+                  uri: item.text,
+                }}
                 style={{
+                  resizeMode: "contain",
                   width: "100%",
                   height: "100%",
-                  resizeMode: "contain",
+                  marginBottom: 10,
                 }}
               />
             </View>
@@ -505,12 +605,20 @@ const ChatScreen = () => {
         >
           <Ionicons name="happy" size={20} color="white" />
         </TouchableOpacity>
-
+        <TouchableOpacity
+          style={styles.iconPickerButton}
+          onPress={handleOpenGifModal}
+        >
+          <MaterialIcons name="gif" size={24} color="white" />
+        </TouchableOpacity>
         <TextInput
           style={styles.input}
           placeholder="Type a message..."
           value={newMessage + selectedIcon}
           onTouchStart={() => {
+            if (isGifModalVisible === true) {
+              setGifModalVisible(false);
+            }
             if (isEmojiVisible === true) {
               handleCloseEmojiBoard();
             }
@@ -537,6 +645,16 @@ const ChatScreen = () => {
             isVisible={isEmojiVisible}
             onEmojiPick={handleEmojiPick}
             onClose={handleCloseEmojiBoard}
+          />
+        </View>
+      )}
+      {isGifModalVisible && (
+        <View style={styles.gifBoard}>
+          <GifBoard
+            isVisible={isGifModalVisible}
+            onGifPick={handleGifPick}
+            onClose={handleCloseGifModal}
+            allGif={allGif}
           />
         </View>
       )}
@@ -634,12 +752,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   imagePickerButton: {
-    padding: 10,
+    padding: 5,
     borderRadius: 8,
     backgroundColor: "#3498db",
   },
   iconPickerButton: {
-    padding: 10,
+    padding: 5,
     borderRadius: 8,
     backgroundColor: "#3498db",
     marginLeft: 10,
@@ -655,7 +773,7 @@ const styles = StyleSheet.create({
   sendButton: {
     flexDirection: "row",
     backgroundColor: "#3498db",
-    padding: 10,
+    padding: 7,
     borderRadius: 8,
     alignItems: "center",
   },
@@ -710,6 +828,21 @@ const styles = StyleSheet.create({
   },
   emojiText: {
     fontSize: 24,
+  },
+  closeButton: {
+    alignItems: "center",
+    padding: 10,
+  },
+  gifBoard: {
+    backgroundColor: "white",
+    padding: 10,
+  },
+  gifButton: {
+    margin: 5,
+  },
+  gifImage: {
+    width: 50,
+    height: 50,
   },
   closeButton: {
     alignItems: "center",
