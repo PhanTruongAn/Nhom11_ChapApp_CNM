@@ -25,6 +25,7 @@ import { handlerConfirmFriend } from "../config/configSocket";
 import { handlerConfirmAddFriend } from "../config/configSocket";
 import { handlerDeleteFriend } from "../config/configSocket";
 import { handlerDelete } from "../config/configSocket";
+import { initGroup } from "../redux/groupSlice";
 import { io } from "socket.io-client";
 import socket from "../config/configSocket";
 import groupApi from "../api/groupApi";
@@ -422,17 +423,18 @@ const GroupListComponent = ({ navigation }) => {
   return (
     <FlatList
       data={group}
-      keyExtractor={(item) => item._id}
+      // keyExtractor={(item) => item._id}
       renderItem={({ item }) => (
         <Pressable
           style={styles.itemContainer}
           onPress={() => {
+            dispatch(initGroup(item));
             handlerJoinRoom({
               groupId: item._id,
               user: user.phone,
               groupName: item.name,
             });
-            navigation.navigate("ChatGroup", { groupData: item });
+            navigation.navigate("ChatGroup");
           }}
         >
           <Avatar

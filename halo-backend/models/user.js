@@ -44,6 +44,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "0",
     },
+    role: {
+      type: String,
+      default: "user",
+    },
     friendRequests: [
       {
         id: {
