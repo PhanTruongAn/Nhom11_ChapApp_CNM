@@ -834,6 +834,8 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   gifBoard: {
+    borderRadius: 5,
+    marginTop: 8,
     backgroundColor: "white",
     padding: 10,
   },

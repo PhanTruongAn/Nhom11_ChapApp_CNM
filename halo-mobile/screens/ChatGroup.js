@@ -37,6 +37,7 @@ import * as Crypto from "expo-crypto";
 import { sendMessInGroup } from "../config/configSocket";
 import groupApi from "../api/groupApi";
 import Constants from "expo-constants";
+import gifApi from "../api/gifApi";
 const EmojiBoard = ({ onEmojiPick, isVisible, onClose }) => {
   const emojis = [
     "😀",
@@ -107,6 +108,39 @@ const EmojiBoard = ({ onEmojiPick, isVisible, onClose }) => {
     </View>
   );
 };
+
+const GifBoard = ({ onGifPick, isVisible, onClose, allGif }) => {
+  const [selectedGif, setSelectedGif] = useState(null);
+
+  const handleGifPick = (gif) => {
+    setSelectedGif(gif);
+    onGifPick(gif);
+  };
+
+  if (!isVisible) {
+    return null;
+  }
+
+  return (
+    <View style={styles.gifBoard}>
+      <FlatList
+        data={allGif}
+        horizontal={true}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => handleGifPick(item.uri)}
+            style={styles.gifButton}
+          >
+            <Image source={{ uri: item.uri }} style={styles.gifImage} />
+          </TouchableOpacity>
+        )}
+      />
+      <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+        <Text>Close</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 const ChatGroup = ({ navigation }) => {
   const route = useRoute();
   const dispatch = useDispatch();
@@ -121,6 +155,30 @@ const ChatGroup = ({ navigation }) => {
   const [selectedIcon, setSelectedIcon] = useState("");
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [isEmojiVisible, setEmojiVisible] = useState(false);
+  const [isGifModalVisible, setGifModalVisible] = useState(false);
+  const [selectedGif, setSelectedGif] = useState(null);
+  const [allGif, setAllGif] = useState([]);
+  const getGiff = async () => {
+    const result = await gifApi.getAllGif();
+    setAllGif(result.DT);
+  };
+  useEffect(() => {
+    getGiff();
+  }, []);
+  // Hàm mở Modal chứa danh sách gif
+  const handleOpenGifModal = () => {
+    setGifModalVisible(true);
+    Keyboard.dismiss();
+    setEmojiVisible(false);
+    if (selectedImage !== null) {
+      Alert.alert("Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi gif");
+      setGifModalVisible(false);
+    }
+  };
+  // Hàm đóng Modal chứa danh sách gif
+  const handleCloseGifModal = () => {
+    setGifModalVisible(false);
+  };
   const [members, setMembers] = useState([
     ...groupData.members,
     groupData.author,
@@ -401,6 +459,42 @@ const ChatGroup = ({ navigation }) => {
       );
     }
   };
+  const handleGifPick = async (gif) => {
+    try {
+      setGifModalVisible(false);
+
+      const data = {
+        idMessenger: await generateUUID(),
+        sender: userSender._id,
+        isDeleted: false,
+        groupId: groupData._id,
+        text: `${gif}`,
+        createdAt: Date.now(),
+        receiver: memberFilter,
+      };
+      setMessages((prevState) => [
+        ...prevState,
+        {
+          idMessenger: data.idMessenger,
+          sender: userSender,
+          isDeleted: data.isDeleted,
+          groupId: data.groupId,
+          text: data.text,
+          createdAt: data.createdAt,
+        },
+      ]);
+      sendMessInGroup({
+        ...data,
+        sender: userSender,
+        isDeleted: false,
+      });
+
+      const res = await groupApi.sendMessGroup(data);
+      setSelectedGif(null);
+    } catch (error) {
+      console.error("Lỗi khi gửi gif:", error);
+    }
+  };
   const renderItem = ({ item }) => (
     <Pressable onPress={() => handleSelectMessage(item.idMessenger)}>
       {item.sender._id !== userSender._id && (
@@ -454,6 +548,9 @@ const ChatGroup = ({ navigation }) => {
 
         {item.text.includes(
           "https://imagemessagehalo.s3.ap-southeast-1.amazonaws.com"
+        ) ||
+        item.text.includes(
+          "https://gifchathalo.s3.ap-southeast-1.amazonaws.com"
         ) ? (
           <View style={{ width: 150, height: 200, marginBottom: 10 }}>
             <Image
@@ -533,7 +630,12 @@ const ChatGroup = ({ navigation }) => {
         >
           <Ionicons name="happy" size={20} color="white" />
         </TouchableOpacity>
-
+        <TouchableOpacity
+          style={styles.iconPickerButton}
+          onPress={handleOpenGifModal}
+        >
+          <MaterialIcons name="gif" size={24} color="white" />
+        </TouchableOpacity>
         <TextInput
           style={styles.input}
           placeholder="Type a message..."
@@ -565,6 +667,16 @@ const ChatGroup = ({ navigation }) => {
             isVisible={isEmojiVisible}
             onEmojiPick={handleEmojiPick}
             onClose={handleCloseEmojiBoard}
+          />
+        </View>
+      )}
+      {isGifModalVisible && (
+        <View style={styles.gifBoard}>
+          <GifBoard
+            isVisible={isGifModalVisible}
+            onGifPick={handleGifPick}
+            onClose={handleCloseGifModal}
+            allGif={allGif}
           />
         </View>
       )}
@@ -668,12 +780,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   imagePickerButton: {
-    padding: 10,
+    padding: 5,
     borderRadius: 8,
     backgroundColor: "#3498db",
   },
   iconPickerButton: {
-    padding: 10,
+    padding: 5,
     borderRadius: 8,
     backgroundColor: "#3498db",
     marginLeft: 10,
@@ -689,7 +801,7 @@ const styles = StyleSheet.create({
   sendButton: {
     flexDirection: "row",
     backgroundColor: "#3498db",
-    padding: 10,
+    padding: 8,
     borderRadius: 8,
     alignItems: "center",
   },
@@ -745,6 +857,20 @@ const styles = StyleSheet.create({
   emojiText: {
     fontSize: 24,
   },
+  gifBoard: {
+    borderRadius: 5,
+    marginTop: 8,
+    backgroundColor: "white",
+    padding: 10,
+  },
+  gifButton: {
+    margin: 5,
+  },
+  gifImage: {
+    width: 50,
+    height: 50,
+  },
+
   closeButton: {
     alignItems: "center",
     padding: 10,

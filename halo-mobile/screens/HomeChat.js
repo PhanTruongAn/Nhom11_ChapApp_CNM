@@ -54,6 +54,8 @@ const ChatListScreen = ({ navigation }) => {
   };
   const fetchData = async () => {
     try {
+      // await AsyncStorage.removeItem("login");
+      // await AsyncStorage.removeItem("isLoggedIn");
       const data = await AsyncStorage.getItem("login");
       const convert = JSON.parse(data);
       getData(convert);
