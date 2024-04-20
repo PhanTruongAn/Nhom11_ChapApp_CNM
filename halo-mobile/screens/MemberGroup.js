@@ -82,32 +82,33 @@ const MemberGroup = ({ navigation }) => {
           <Text style={{ fontSize: 16, fontWeight: "500", marginLeft: 20 }}>
             {item.name}
           </Text>
-          {!isCurrentUser &&
-            isAuthor && ( // Chỉ hiển thị nút Xóa nếu không phải là người dùng hiện tại và là tác giả
-              <TouchableOpacity
-                style={{
-                  width: 50,
-                  height: 40,
-                  backgroundColor: "red",
-                  borderRadius: 10,
-                  justifyContent: "center",
-                  position: "relative",
-                }}
-                onPress={handleDelete}
-              >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "600",
-                    alignSelf: "center",
-                    color: "white",
-                  }}
-                >
-                  Xóa
-                </Text>
-              </TouchableOpacity>
-            )}
         </View>
+        {!isCurrentUser &&
+          isAuthor && ( // Chỉ hiển thị nút Xóa nếu không phải là người dùng hiện tại và là tác giả
+            <TouchableOpacity
+              style={{
+                width: 50,
+                height: 40,
+                backgroundColor: "red",
+                borderRadius: 10,
+                justifyContent: "center",
+                position: "absolute",
+                right: 10,
+              }}
+              onPress={handleDelete}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  alignSelf: "center",
+                  color: "white",
+                }}
+              >
+                Xóa
+              </Text>
+            </TouchableOpacity>
+          )}
       </TouchableOpacity>
     );
   };

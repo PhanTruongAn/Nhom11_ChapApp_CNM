@@ -225,11 +225,9 @@ const ChatGroup = ({ navigation }) => {
       });
     });
     socket.on("retrieveDelete", (call) => {
-      alert("Bạn đã bị xóa khỏi nhóm " + `${groupData.name}`);
       navigation.navigate("ChatList");
     });
     socket.on("deleteGroup", (call) => {
-      alert("Nhóm " + `${groupData.name}` + "đã bị xóa");
       navigation.navigate("ChatList");
     });
     getAllChat();

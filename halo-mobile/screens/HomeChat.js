@@ -135,12 +135,58 @@ const ChatListScreen = ({ navigation }) => {
       <View style={{ padding: 8 }}>
         {item.avatar.uri ? (
           <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
-        ) : !item.avatar.color ? (
-          <Avatar
-            size={50}
-            rounded
-            source={require("../assets/avatar-default.jpeg")}
-          />
+        ) : item.members ? (
+          <View style={styles.container}>
+            <View style={styles.row}>
+              <Avatar
+                size={30}
+                rounded
+                title={extendFunctions.getAvatarName(item.author.name)}
+                containerStyle={{
+                  backgroundColor: item.author.avatar.color,
+                }}
+              />
+              <Avatar
+                size={30}
+                rounded
+                title={
+                  item.members && item.members.length > 0
+                    ? extendFunctions.getAvatarName(item.members[0].name)
+                    : ""
+                }
+                containerStyle={{
+                  backgroundColor: item.members[0].avatar.color,
+                }}
+              />
+            </View>
+            <View style={styles.row}>
+              <Avatar
+                size={30}
+                rounded
+                title={
+                  item.members && item.members.length > 1
+                    ? extendFunctions.getAvatarName(item.members[1].name)
+                    : ""
+                }
+                containerStyle={{
+                  backgroundColor: item.members[1].avatar.color,
+                }}
+              />
+              {item.members && item.members[2] ? (
+                <Avatar
+                  size={30}
+                  rounded
+                  titleStyle={{ color: "#7589a3", fontWeight: "600" }}
+                  title={
+                    item.members && item.members.length > 2
+                      ? `${item.members.length - 2}`
+                      : ""
+                  }
+                  containerStyle={{ backgroundColor: "#e6e8ea" }}
+                />
+              ) : null}
+            </View>
+          </View>
         ) : (
           <Avatar
             size={50}
@@ -229,6 +275,19 @@ const ChatListScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: -20,
+    left: -7,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    marginRight: -10,
+  },
   screen: {
     flex: 1,
     padding: 20,
