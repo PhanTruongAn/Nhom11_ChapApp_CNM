@@ -140,7 +140,6 @@ const searchByPhone = async (user) => {
   };
 };
 const getDataById = async (user) => {
-  console.log(user);
   const account = await User.findOne(
     { _id: user._id },
     "_id name phone email avatar sex dateOfBirth isActive friendRequests sendFriendRequests friends"
@@ -150,7 +149,7 @@ const getDataById = async (user) => {
       EM: "Account is not exist!",
     };
   }
-  console.log("User:", account);
+
   return {
     DT: account,
     EC: 0,
@@ -197,7 +196,7 @@ const updateUser = async (newData) => {
 const changePassword = async (user) => {
   try {
     let newPassword = hashPassword(user.newPassword);
-    console.log("Check new password: -----", newPassword);
+
     const updatedUser = await User.findOneAndUpdate(
       { _id: user._id },
       {

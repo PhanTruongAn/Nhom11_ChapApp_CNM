@@ -1,7 +1,8 @@
 // // User Registry
 import User from "../models/user";
 import Group from "../models/group";
-
+import GroupMessenger from "../models/groupMessenger";
+import mongoose from "mongoose";
 const GetInFoUsersById = async (arr) => {
   let list = [];
   if (arr && arr.length > 0) {
@@ -96,6 +97,50 @@ const GetAllGroupByUserId = async (data) => {
     };
   }
 };
+const GetAllGroupsWithLatestMessage = async (data) => {
+  try {
+    const res = await GetAllGroupByUserId(data);
+    const groups = res.DT;
+
+    if (groups && groups.length > 0) {
+      let arr = await Promise.all(
+        groups.map(async (item, index) => {
+          let data = await GroupMessenger.find({
+            group: new mongoose.Types.ObjectId(item._id),
+          })
+            .sort({ createdAt: "desc" })
+            .populate("sender")
+            .populate({
+              path: "group",
+              populate: {
+                path: "author members",
+                select: "_id name phone email avatar",
+              },
+            })
+            // .limit(1)
+            .exec();
+          if (data && data.length > 0) {
+            return data[0];
+          } else {
+            return {};
+          }
+        })
+      );
+      return {
+        EM: "Get message final of group is success!",
+        EC: 0,
+        DT: arr,
+      };
+    }
+    return {
+      EM: "Get message final of group is error!",
+      EC: 0,
+      DT: [],
+    };
+  } catch (error) {
+    console.log("Error: ", error);
+  }
+};
 const DeleteMembersFromGroup = async (data) => {
   try {
     const item = data.member._id;
@@ -152,4 +197,5 @@ module.exports = {
   AddMembersToGroup,
   DeleteMembersFromGroup,
   DeleteGroupById,
+  GetAllGroupsWithLatestMessage,
 };

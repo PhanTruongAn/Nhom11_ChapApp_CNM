@@ -142,7 +142,7 @@ const GifBoard = ({ onGifPick, isVisible, onClose, allGif }) => {
     </View>
   );
 };
-const ChatScreen = () => {
+const ChatScreen = ({ navigation }) => {
   const route = useRoute();
   const dispatch = useDispatch();
   const userSender = useSelector((state) => state.userLogin.user);
@@ -217,7 +217,7 @@ const ChatScreen = () => {
     });
   }, [socket]);
   const iconRef = useRef(null);
-  const navigation = useNavigation();
+  // const navigation = useNavigation();
 
   const handleImagePick = async () => {
     setNewMessage("");

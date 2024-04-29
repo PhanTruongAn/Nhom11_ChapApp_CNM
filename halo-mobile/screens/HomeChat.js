@@ -15,7 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import extendFunctions from "../constants/extendFunctions";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser, updateUser } from "../redux/userSlice";
-import { groupConversation } from "../redux/conversationSlice";
+import { groupConversation, lastMessenger } from "../redux/conversationSlice";
 import { handleCustomClient } from "../config/configSocket";
 import chatApi from "../api/chatApi";
 import userApi from "../api/userApi";
@@ -46,10 +46,32 @@ const ChatListScreen = ({ navigation }) => {
       dispatch(updateUser(req.DT));
       const conversation = await chatApi.getConversation(req.DT);
       const groups = await groupApi.getAllGroup(req.DT);
+      const latestGroup = await groupApi.getLatestMesGroup(req.DT);
+      const newArray = latestGroup.DT.map((item) => ({
+        _id: item.group?._id,
+        latestMessage: {
+          createdAt: item.createdAt,
+          text: item.text,
+        },
+      }));
+      // Sử dụng reduce để kết hợp các thông tin
+      const result = groups.DT.map((group) => {
+        const latestMessage = newArray.find((item) => item._id === group._id)
+          ?.latestMessage || {
+          createdAt: "",
+          text: "",
+        };
+        return {
+          ...group,
+          latestMessage,
+        };
+      });
+
+      console.log("Group with latest message:", result);
       console.log("Groups: ", groups.DT);
       dispatch(initUsers(conversation.DT));
-      dispatch(groupConversation(groups.DT));
-      console.log("Conversation: ", conversation);
+      dispatch(groupConversation(result));
+      // console.log("Conversation: ", conversation);
     }
   };
   const fetchData = async () => {
@@ -92,26 +114,38 @@ const ChatListScreen = ({ navigation }) => {
     socket.on("deleteGroup", (call) => {
       fetchData();
     });
+    fetchData();
   }, [socket]);
 
   const onFocusSearch = () => {
     navigation.navigate("SearchScreen");
   };
   const handlerTime = (timeString) => {
-    const currentTime = Date.now();
-    // Chuyển đổi chuỗi thời gian thành giá trị thời gian Unix
-    const messageTime = new Date(timeString).getTime();
-    // Tính chênh lệch thời gian
-    const timeDiff = currentTime - messageTime;
-
-    // Chuyển đổi chênh lệch thời gian sang giờ hoặc phút
-    const hoursDiff = Math.floor(timeDiff / (1000 * 60 * 60));
-    const minutesDiff = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-    if (minutesDiff > 60) {
-      return hoursDiff;
+    if (!timeString) {
+      return "";
     }
-    return minutesDiff;
+    const currentTime = new Date().getTime(); // Lấy thời gian hiện tại
+    const messageTime = new Date(timeString).getTime(); // Chuyển đổi chuỗi thời gian thành giá trị thời gian Unix
+    const timeDiff = currentTime - messageTime; // Tính chênh lệch thời gian
+
+    // Tính toán số ngày, giờ, phút, giây
+    const seconds = Math.floor(timeDiff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    // Trả về kết quả
+    if (days > 0) {
+      return `${days} ngày`;
+    } else if (hours > 0) {
+      return `${hours} giờ`;
+    } else if (minutes > 0) {
+      return `${minutes} phút`;
+    } else {
+      return `${seconds} giây`;
+    }
   };
+
   const isImageURL = (url) => {
     return url.toLowerCase().match(/\.(jpeg|jpg|gif|png)$/) != null;
   };
@@ -196,8 +230,12 @@ const ChatListScreen = ({ navigation }) => {
           />
         )}
       </View>
+
       <View style={styles.content}>
         <Text style={styles.name}>{item.name}</Text>
+        {item.latestMessage && (
+          <Text style={styles.message}>{item.latestMessage.text}</Text>
+        )}
         {item.lastMessage && (
           <Text style={styles.message}>
             {isImageURL(item.lastMessage) ? "Đã gửi 1 ảnh" : item.lastMessage}
@@ -206,15 +244,16 @@ const ChatListScreen = ({ navigation }) => {
       </View>
       <View style={styles.info}>
         <Text style={styles.time}>
-          {item.lastMessageTime
-            ? `${handlerTime(item.lastMessageTime)} phút`
+          {item.latestMessage
+            ? `${handlerTime(item.latestMessage.createdAt)}`
             : ""}
+          {item.lastMessageTime ? `${handlerTime(item.lastMessageTime)}` : ""}
         </Text>
-        {item.unreadCount > 0 && (
+        {/* {item.unreadCount > 0 && (
           <View style={styles.unreadBadge}>
             <Text>{item.unreadCount}</Text>
           </View>
-        )}
+        )} */}
       </View>
     </TouchableOpacity>
   );

@@ -33,6 +33,10 @@ const groupApi = {
     const url = "/retrieve-message-group";
     return axiosClient.post(url, data);
   },
+  getLatestMesGroup: (data) => {
+    const url = "/get-all-group-latest-mes";
+    return axiosClient.post(url, data);
+  },
 };
 
 export default groupApi;

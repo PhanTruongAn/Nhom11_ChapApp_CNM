@@ -42,6 +42,10 @@ const initAppRoutes = (app) => {
   // Group Route
   router.post("/create-group", groupController.handlerCreateNewGroup);
   router.post("/get-all-group", groupController.handlerGetAllGroup);
+  router.post(
+    "/get-all-group-latest-mes",
+    groupController.handlerGetAllGroupsWithLatestMessage
+  );
   router.post("/add-members", groupController.handlerAddMembers);
   router.post("/delete-members", groupController.handlerDeleteMembers);
   router.post("/delete-group", groupController.handlerDeleteMGroup);
