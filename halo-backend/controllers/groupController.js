@@ -135,6 +135,23 @@ const handlerRetrieveMessenger = async (req, res) => {
     });
   }
 };
+const handlerDeleteMessenger = async (req, res) => {
+  try {
+    let data = await groupChatService.deletedMessenger(req.body);
+    return res.status(200).json({
+      EC: data.EC,
+      DT: data.DT,
+    });
+  } catch (error) {
+    console.log("server " + error);
+    return res.status(500).json({
+      EM: "error from sever",
+      EC: "-1",
+      DT: "",
+    });
+  }
+};
+
 const handlerGetAllGroupsWithLatestMessage = async (req, res) => {
   try {
     let data = await groupService.GetAllGroupsWithLatestMessage(req.body);
@@ -162,4 +179,5 @@ module.exports = {
   handlerGetAllChatGroup,
   handlerRetrieveMessenger,
   handlerGetAllGroupsWithLatestMessage,
+  handlerDeleteMessenger,
 };

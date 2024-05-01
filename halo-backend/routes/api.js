@@ -39,6 +39,7 @@ const initAppRoutes = (app) => {
   router.post("/get-all-chat", chatController.handlerGetAllChatPrivate);
   router.post("/get-conversation", chatController.handlerGetAllConversation);
   router.post("/retrieve-messenger", chatController.handlerRetrieveMessenger);
+  router.post("/delete-messenger", chatController.handlerDeletedMessenger);
   // Group Route
   router.post("/create-group", groupController.handlerCreateNewGroup);
   router.post("/get-all-group", groupController.handlerGetAllGroup);
@@ -55,7 +56,7 @@ const initAppRoutes = (app) => {
     "/retrieve-message-group",
     groupController.handlerRetrieveMessenger
   );
-
+  router.post("/delete-message-group", groupController.handlerDeleteMessenger);
   // Gif Route
   router.post("/add-gif", gifController.handlerAddGif);
   router.post("/get-all-gif", gifController.handlerGetAllGif);

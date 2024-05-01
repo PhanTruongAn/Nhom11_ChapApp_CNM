@@ -7,7 +7,13 @@ import {
   Pressable,
   TextInput,
 } from "react-native";
-import { AntDesign, Entypo, Feather, FontAwesome5 } from "@expo/vector-icons";
+import {
+  AntDesign,
+  Entypo,
+  Feather,
+  FontAwesome5,
+  Ionicons,
+} from "@expo/vector-icons";
 import { Avatar } from "@rneui/themed";
 import { useRoute } from "@react-navigation/core";
 import { useState } from "react";
@@ -173,8 +179,16 @@ const GroupOption = ({ navigation }) => {
           <AntDesign name="addusergroup" size={23} color="gray" />
         </Pressable>
         <Pressable style={styles.pressable}>
-          <Text style={styles.pressableText}>Xóa thành viên nhóm</Text>
-          <AntDesign name="deleteuser" size={23} color="gray" />
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: "600",
+              color: "red",
+            }}
+          >
+            Rời nhóm
+          </Text>
+          <Ionicons name="exit-outline" size={24} color="gray" />
         </Pressable>
 
         <Pressable style={styles.pressable} onPress={handlerDeleteGroup}>
@@ -185,7 +199,7 @@ const GroupOption = ({ navigation }) => {
               color: "red",
             }}
           >
-            Xóa nhóm
+            Giải tán nhóm
           </Text>
           <AntDesign name="deleteusergroup" size={23} color="gray" />
         </Pressable>

@@ -17,5 +17,9 @@ const chatApi = {
     const url = "/retrieve-messenger";
     return axiosClient.post(url, data);
   },
+  deleteMessenger: (data) => {
+    const url = "/delete-messenger";
+    return axiosClient.post(url, data);
+  },
 };
 export default chatApi;

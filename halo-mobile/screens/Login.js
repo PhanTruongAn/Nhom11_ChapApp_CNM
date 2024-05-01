@@ -48,8 +48,6 @@ const Login = ({ navigation }) => {
         navigation.navigate("BottomTabNavigator");
         setPhone("");
         setPassword("");
-        // socket.emit("userLogin", phone);
-        // console.log("Check Socket: ", socket);
       }
     } else {
       alert("Hãy nhập đầy đủ thông tin!");

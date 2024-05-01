@@ -177,7 +177,16 @@ const ChatScreen = ({ navigation }) => {
       receiver: userReceiver.phone,
     };
     const res = await chatApi.getAllChat(data);
-    setMessages(res.DT);
+
+    const filteredMessages = [];
+    for (const message of res.DT) {
+      if (message.deletedBy !== userSender._id) {
+        filteredMessages.push(message);
+      }
+    }
+    // console.log("MessagesList: ", res.DT);
+    console.log("MessagesList: ", filteredMessages);
+    setMessages(filteredMessages);
   };
   useEffect(() => {
     socket.on("receiveMessenger", (res) => {
@@ -381,7 +390,19 @@ const ChatScreen = ({ navigation }) => {
       setSelectedMessage(messageId);
     }
   };
-  const handleDeleteMessage = async (messageId) => {
+  const handlerDeleteMessage = async () => {
+    const data = {
+      _id: userSender._id,
+      idMessenger: selectedMessage,
+    };
+    const newMessages = messages.filter(
+      (item) => item.idMessenger !== selectedMessage
+    );
+    setMessages(newMessages);
+    const rs = await chatApi.deleteMessenger(data);
+    console.log("Result: ", rs.DT);
+  };
+  const handleRetrieveMessage = async (messageId) => {
     const updatedMessages = messages.map((message) => {
       if (message.idMessenger === messageId) {
         return { ...message, isDeleted: true };
@@ -505,7 +526,7 @@ const ChatScreen = ({ navigation }) => {
                 justifyContent: "space-evenly",
               }}
             >
-              <TouchableOpacity>
+              <TouchableOpacity onPress={handlerDeleteMessage}>
                 <MaterialIcons name="delete" size={20} color="gray" />
               </TouchableOpacity>
               <TouchableOpacity>
@@ -513,7 +534,7 @@ const ChatScreen = ({ navigation }) => {
                   name="reload"
                   size={20}
                   color="gray"
-                  onPress={() => handleDeleteMessage(item.idMessenger)}
+                  onPress={() => handleRetrieveMessage(item.idMessenger)}
                 />
               </TouchableOpacity>
               <TouchableOpacity>

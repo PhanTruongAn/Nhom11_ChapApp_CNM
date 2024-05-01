@@ -1,5 +1,6 @@
 import PrivateMessenger from "../models/privateMessenger";
 import User from "../models/user";
+import mongoose from "mongoose";
 const sendMessage = async (user) => {
   try {
     let sender = await User.findOne({ phone: user.sender }).exec();
@@ -65,6 +66,7 @@ const getAllChatPrivate = async (data) => {
           text: 1,
           isDeleted: 1,
           createdAt: 1,
+          deletedBy: 1,
           _id: 0, // Loại bỏ trường _id nếu không cần thiết
         }
       )
@@ -284,9 +286,42 @@ const retrieveMessenger = async (user) => {
     throw error;
   }
 };
+
+const deleteMessenger = async (data) => {
+  console.log("Data: ", data);
+  const idMessenger = data.idMessenger;
+  try {
+    const res = await PrivateMessenger.findOneAndUpdate(
+      { idMessenger: idMessenger },
+      {
+        $set: {
+          deletedBy: new mongoose.Types.ObjectId(data._id),
+        },
+      },
+      {
+        new: true,
+        select:
+          "idMessenger sender receiver text isDeleted createdAt deletedBy",
+      }
+    );
+
+    if (!res) {
+      console.log("Không tìm thấy tin nhắn!");
+      return null;
+    }
+    return {
+      DT: res,
+      EC: 0,
+    };
+  } catch (error) {
+    console.error("Lỗi từ server:", error);
+    throw error;
+  }
+};
 module.exports = {
   sendMessage,
   getAllChatPrivate,
   findDistinctUsers,
   retrieveMessenger,
+  deleteMessenger,
 };

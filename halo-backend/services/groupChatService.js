@@ -87,9 +87,41 @@ const retrieveMessenger = async (user) => {
     throw error;
   }
 };
+const deletedMessenger = async (data) => {
+  const idMessenger = data.idMessenger;
+
+  try {
+    const res = await GroupMessenger.findOneAndUpdate(
+      { idMessenger: idMessenger },
+      {
+        $set: {
+          deletedBy: new mongoose.Types.ObjectId(data._id),
+        },
+      },
+      {
+        new: true,
+        select: "idMessenger receiver text group isDeleted createdAt deletedBy", // Loại bỏ trường "sender" ở đây
+      }
+    );
+
+    if (!res) {
+      console.log("Không tìm thấy tin nhắn!");
+      return null;
+    }
+
+    return {
+      DT: res,
+      EC: 0,
+    };
+  } catch (error) {
+    console.error("Lỗi từ server:", error);
+    throw error;
+  }
+};
 
 module.exports = {
   sendMessageGroup,
   getAllChatGroup,
   retrieveMessenger,
+  deletedMessenger,
 };

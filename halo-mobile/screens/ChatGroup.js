@@ -191,8 +191,13 @@ const ChatGroup = ({ navigation }) => {
       groupId: groupData._id,
     };
     const res = await groupApi.getAllChatGroup(data);
-
-    setMessages(res.DT);
+    const filteredMessages = [];
+    for (const message of res.DT) {
+      if (message.deletedBy !== userSender._id) {
+        filteredMessages.push(message);
+      }
+    }
+    setMessages(filteredMessages);
   };
 
   useEffect(() => {
@@ -417,8 +422,19 @@ const ChatGroup = ({ navigation }) => {
       setSelectedMessage(messageId);
     }
   };
-
-  const handleDeleteMessage = async (messageId) => {
+  const handlerDeleteMessage = async () => {
+    const data = {
+      _id: userSender._id,
+      idMessenger: selectedMessage,
+    };
+    const newMessages = messages.filter(
+      (item) => item.idMessenger !== selectedMessage
+    );
+    setMessages(newMessages);
+    const rs = await groupApi.deleteMessage(data);
+    console.log("Result: ", rs.DT);
+  };
+  const handleRetrieveMessage = async (messageId) => {
     const updatedMessages = messages.map((message) => {
       if (message.idMessenger === messageId) {
         return { ...message, isDeleted: true };
@@ -527,7 +543,7 @@ const ChatGroup = ({ navigation }) => {
                 justifyContent: "space-evenly",
               }}
             >
-              <TouchableOpacity>
+              <TouchableOpacity onPress={handlerDeleteMessage}>
                 <MaterialIcons name="delete" size={20} color="gray" />
               </TouchableOpacity>
               <TouchableOpacity>
@@ -535,7 +551,7 @@ const ChatGroup = ({ navigation }) => {
                   name="reload"
                   size={20}
                   color="gray"
-                  onPress={() => handleDeleteMessage(item.idMessenger)}
+                  onPress={() => handleRetrieveMessage(item.idMessenger)}
                 />
               </TouchableOpacity>
               <TouchableOpacity>
