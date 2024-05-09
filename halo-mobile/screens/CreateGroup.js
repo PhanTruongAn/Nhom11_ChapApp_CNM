@@ -45,16 +45,20 @@ const CustomPopup = ({ isVisible, avatars, user, data, navigation }) => {
       <TouchableOpacity
         style={styles.confirmButton}
         onPress={async () => {
-          const res = await groupApi.createGroup(data);
-          if (res) {
-            createGroup(res.DT);
-            handlerJoinRoom({
-              groupId: res.DT._id,
-              user: user.phone,
-              groupName: res.DT.name,
-            });
-            dispatch(initGroup(res.DT));
-            navigation.navigate("ChatGroup");
+          if (data.members.length < 2) {
+            alert("Cần 3 thành viên để lập nhóm!");
+          } else {
+            const res = await groupApi.createGroup(data);
+            if (res) {
+              createGroup(res.DT);
+              handlerJoinRoom({
+                groupId: res.DT._id,
+                user: user.phone,
+                groupName: res.DT.name,
+              });
+              dispatch(initGroup(res.DT));
+              navigation.navigate("ChatGroup");
+            }
           }
         }}
       >

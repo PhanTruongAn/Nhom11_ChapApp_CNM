@@ -16,6 +16,7 @@ import groupApi from "../api/groupApi";
 import { initGroup } from "../redux/groupSlice";
 import { deleteMember } from "../redux/groupSlice";
 import { deleteMemberSocket } from "../config/configSocket";
+
 const MemberGroup = ({ navigation }) => {
   const dispatch = useDispatch();
   const route = useRoute();

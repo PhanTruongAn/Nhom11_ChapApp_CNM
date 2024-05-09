@@ -529,36 +529,37 @@ const ChatGroup = ({ navigation }) => {
         }
       >
         {item.sender._id === userSender._id &&
-          selectedMessage === item.idMessenger && (
-            <View
-              style={{
-                position: "absolute",
-                left: -110,
-                top: 30,
-                backgroundColor: "#f1f1f5",
-                borderRadius: 8,
-                height: 25,
-                width: 100,
-                flexDirection: "row",
-                justifyContent: "space-evenly",
-              }}
-            >
-              <TouchableOpacity onPress={handlerDeleteMessage}>
-                <MaterialIcons name="delete" size={20} color="gray" />
-              </TouchableOpacity>
-              <TouchableOpacity>
-                <Ionicons
-                  name="reload"
-                  size={20}
-                  color="gray"
-                  onPress={() => handleRetrieveMessage(item.idMessenger)}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity>
-                <AntDesign name="back" size={20} color="gray" />
-              </TouchableOpacity>
-            </View>
-          )}
+        selectedMessage === item.idMessenger &&
+        !item.isDeleted ? (
+          <View
+            style={{
+              position: "absolute",
+              left: -110,
+              top: 30,
+              backgroundColor: "#f1f1f5",
+              borderRadius: 8,
+              height: 25,
+              width: 100,
+              flexDirection: "row",
+              justifyContent: "space-evenly",
+            }}
+          >
+            <TouchableOpacity onPress={handlerDeleteMessage}>
+              <MaterialIcons name="delete" size={20} color="gray" />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Ionicons
+                name="reload"
+                size={20}
+                color="gray"
+                onPress={() => handleRetrieveMessage(item.idMessenger)}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <AntDesign name="back" size={20} color="gray" />
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         {item.text.includes(
           "https://imagemessagehalo.s3.ap-southeast-1.amazonaws.com"

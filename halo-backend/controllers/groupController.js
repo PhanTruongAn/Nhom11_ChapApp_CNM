@@ -169,6 +169,23 @@ const handlerGetAllGroupsWithLatestMessage = async (req, res) => {
     });
   }
 };
+const handlerLeaderLeaveGroup = async (req, res) => {
+  try {
+    let data = await groupService.LeaderLeaveGroup(req.body);
+    return res.status(200).json({
+      EM: data.EM,
+      EC: data.EC,
+      DT: data.DT,
+    });
+  } catch (error) {
+    console.log("server " + error);
+    return res.status(500).json({
+      EM: "error from sever",
+      EC: "-1",
+      DT: "",
+    });
+  }
+};
 module.exports = {
   handlerCreateNewGroup,
   handlerGetAllGroup,
@@ -180,4 +197,5 @@ module.exports = {
   handlerRetrieveMessenger,
   handlerGetAllGroupsWithLatestMessage,
   handlerDeleteMessenger,
+  handlerLeaderLeaveGroup,
 };

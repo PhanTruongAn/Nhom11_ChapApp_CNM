@@ -236,9 +236,14 @@ const configSocket = (server) => {
         }
       }
     });
-
-    socket.on("deleteGroup", () => {
-      io.emit("deleteGroup");
+    socket.on("retrieveMessGroup", (data) => {
+      // console.log("CallbackRetrieve: ", data);
+      socket.to(data.group).emit("RetrieveMessGroup", data);
+    });
+    socket.on("leaveGroup", (data) => {
+      console.log(`User ${data.member.name} left room: ${data.nameGroup}`);
+      io.to(data._id).emit("retrieveLeaveGroup");
+      // socket.leave(data._id);
     });
   });
 };

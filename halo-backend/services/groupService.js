@@ -190,7 +190,30 @@ const DeleteGroupById = async (data) => {
     };
   }
 };
+const LeaderLeaveGroup = async (data) => {
+  try {
+    const item = data.member;
+    const updatedGroup = await Group.findOneAndUpdate(
+      { _id: data._id },
+      { $pull: { members: item }, $set: { author: item } },
+      { new: true }
+    )
+      .populate("author", "_id name phone email avatar")
+      .populate("members", "_id name phone email avatar")
+      .exec();
 
+    return {
+      EM: "Delete members successfully!",
+      EC: 0,
+      DT: updatedGroup,
+    };
+  } catch (error) {
+    return {
+      EM: "Error from server!",
+      EC: 1,
+    };
+  }
+};
 module.exports = {
   CreateNewGroup,
   GetAllGroupByUserId,
@@ -198,4 +221,5 @@ module.exports = {
   DeleteMembersFromGroup,
   DeleteGroupById,
   GetAllGroupsWithLatestMessage,
+  LeaderLeaveGroup,
 };

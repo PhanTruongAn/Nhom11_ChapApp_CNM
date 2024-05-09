@@ -6,6 +6,8 @@ import {
   Image,
   Pressable,
   TextInput,
+  Modal,
+  FlatList,
 } from "react-native";
 import {
   AntDesign,
@@ -13,7 +15,9 @@ import {
   Feather,
   FontAwesome5,
   Ionicons,
+  FontAwesome,
 } from "@expo/vector-icons";
+import { useRef } from "react";
 import { Avatar } from "@rneui/themed";
 import { useRoute } from "@react-navigation/core";
 import { useState } from "react";
@@ -22,17 +26,25 @@ import { useDispatch, useSelector } from "react-redux";
 import groupApi from "../api/groupApi";
 import { deleteGroupSocket } from "../config/configSocket";
 import { useEffect } from "react";
+import { initGroup } from "../redux/groupSlice";
+import { deleteMemberSocket } from "../config/configSocket";
+import { leaveGroup } from "../config/configSocket";
+import { TouchableOpacity } from "react-native";
+import extendFunctions from "../constants/extendFunctions";
 const GroupOption = ({ navigation }) => {
+  const dispatch = useDispatch();
   const route = useRoute();
   const user = useSelector((state) => state.userLogin.user);
   const groupOption = useSelector((state) => state.groupsInit.group);
+  const [showPopup, setShowPopup] = useState(false);
+  const [selected, setSelected] = useState(false);
   useEffect(() => {
     socket.on("deleteGroup", (call) => {
       alert("Nhóm đã bị xóa");
       navigation.navigate("ChatList");
     });
   }, [socket]);
-
+  useEffect(() => {}, [selected]);
   const handlerDeleteGroup = async () => {
     const data = {
       _id: groupOption._id,
@@ -42,8 +54,169 @@ const GroupOption = ({ navigation }) => {
       deleteGroupSocket();
     }
   };
+  const handleLeaderLeaveGroup = async () => {
+    const data = {
+      _id: groupOption._id,
+      nameGroup: groupOption.name,
+      member: selected,
+    };
+    const res = await groupApi.leaderLeaveGroup(data);
+    console.log("Result: ", res.DT);
+    if (res) {
+      dispatch(initGroup(res.DT));
+      leaveGroup(data);
+      navigation.navigate("ChatList");
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (user._id === groupOption.author._id) {
+      setShowPopup(true);
+    } else {
+      const data = {
+        _id: groupOption._id,
+        nameGroup: groupOption.name,
+        member: user,
+      };
+      const res = await groupApi.deleteMembers(data);
+      console.log("Result: ", res.DT);
+      if (res) {
+        dispatch(initGroup(res.DT));
+        leaveGroup(data);
+        navigation.navigate("ChatList");
+      }
+    }
+  };
+
+  const toggleModal = () => {
+    setShowPopup(false);
+  };
+
+  const renderUserItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.userItem}
+      onPress={() => {
+        setSelected(item._id);
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Avatar
+          size={50}
+          rounded
+          title={extendFunctions.getAvatarName(item.name)}
+          containerStyle={{
+            backgroundColor: item.avatar.color,
+          }}
+        />
+        <Text style={{ fontSize: 16, fontWeight: "500", marginLeft: 20 }}>
+          {item.name}
+        </Text>
+      </View>
+      <FontAwesome
+        name={selected === item._id ? "check-circle" : "circle-o"}
+        size={28}
+        color="#1faeeb"
+      />
+    </TouchableOpacity>
+  );
   return (
     <View style={styles.container}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showPopup}
+        onRequestClose={toggleModal}
+      >
+        <TouchableOpacity
+          style={{
+            alignItems: "center",
+            width: "100%",
+            height: "100%",
+            backgroundColor: "white",
+            // position: "absolute",
+            // bottom: 0,
+          }}
+        >
+          <View
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 10,
+            }}
+          >
+            <Text style={{ fontSize: 20, fontWeight: "600", color: "black" }}>
+              Chọn trưởng nhóm mới trước khi rời
+            </Text>
+          </View>
+          <View style={styles.searchBar}>
+            <Ionicons
+              name="search"
+              size={24}
+              color="gray"
+              style={{ paddingLeft: 10 }}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Tìm kiếm"
+              // onChangeText={(e) => handleSearch(e)}
+            />
+          </View>
+
+          <View style={{ flex: 1, marginTop: 20, width: "90%" }}>
+            <FlatList
+              data={groupOption.members}
+              renderItem={renderUserItem}
+              // keyExtractor={(item) => item.id.toString()}
+            />
+          </View>
+          <View style={styles.popupContainer}>
+            <TouchableOpacity
+              style={{
+                width: "90%",
+                height: 35,
+                backgroundColor: "blue",
+                alignSelf: "center",
+                justifyContent: "center",
+                borderRadius: 20,
+              }}
+              onPress={handleLeaderLeaveGroup}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "600",
+                  color: "white",
+                  alignSelf: "center",
+                }}
+              >
+                Chọn và tiếp tục
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                width: "80%",
+                height: 35,
+                backgroundColor: "white",
+                alignSelf: "center",
+                justifyContent: "center",
+                borderRadius: 20,
+              }}
+              onPress={toggleModal}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "600",
+                  color: "black",
+                  alignSelf: "center",
+                }}
+              >
+                Hủy
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
       <View style={styles.header}>
         <Pressable
           onPress={() => {
@@ -178,7 +351,7 @@ const GroupOption = ({ navigation }) => {
           <Text style={styles.pressableText}>Chuyển quyền trưởng nhóm</Text>
           <AntDesign name="addusergroup" size={23} color="gray" />
         </Pressable>
-        <Pressable style={styles.pressable}>
+        <Pressable style={styles.pressable} onPress={handleLeaveGroup}>
           <Text
             style={{
               fontSize: 16,
@@ -219,15 +392,58 @@ const styles = StyleSheet.create({
     alignItems: "center",
     // padding: 10,
   },
+  popupContainer: {
+    flexDirection: "column",
+    justifyContent: "space-evenly",
+    width: "100%",
+    height: "18%",
+    backgroundColor: "white",
+    borderRadius: 3,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -3,
+    },
+    shadowOpacity: 0.2, // Điều chỉnh độ đậm của border nổi
+    shadowRadius: 3.84,
+    elevation: 10, // Điều chỉnh độ nổi của border
+    borderColor: "black",
+    alignItems: "center",
+  },
   groupName: {
     marginTop: 10,
     fontSize: 18,
     fontWeight: "600",
     alignSelf: "center",
   },
+  userItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  searchBar: {
+    marginTop: 10,
+    width: "90%",
+    height: 35,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "gray",
+    backgroundColor: "white",
+    paddingVertical: 5,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "gray",
+    paddingLeft: 15,
   },
   headerTitle: {
     marginLeft: 10,

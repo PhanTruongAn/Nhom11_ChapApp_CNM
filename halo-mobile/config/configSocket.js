@@ -54,7 +54,7 @@ const handlerRefreshAccount = (dispatch) => {
 const handleOffReFreshAccount = () => {
   socket.off("refresh");
 };
-
+// Chat Socket
 const senderMessenger = (data) => {
   socket.emit("sendMessenger", data);
 };
@@ -67,6 +67,8 @@ const receiveMessenger = () => {
 const retrieveMessenger = (data) => {
   socket.emit("retrieveMessenger", data);
 };
+
+// Group Socket
 const createGroup = (data) => {
   socket.emit("createGroup", data);
 };
@@ -84,6 +86,9 @@ const deleteGroupSocket = (data) => {
 };
 const retrieveMessGroup = (data) => {
   socket.emit("retrieveMessGroup", data);
+};
+const leaveGroup = (data) => {
+  socket.emit("leaveGroup", data);
 };
 export default socket;
 export {
@@ -108,4 +113,5 @@ export {
   deleteMemberSocket,
   deleteGroupSocket,
   retrieveMessGroup,
+  leaveGroup,
 };

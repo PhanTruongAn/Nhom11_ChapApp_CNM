@@ -105,6 +105,7 @@ const ChatListScreen = ({ navigation }) => {
     }
   }, [userLogin]);
   useEffect(() => {
+    fetchData();
     socket.on("retrieve", (call) => {
       fetchData();
     });
@@ -114,7 +115,9 @@ const ChatListScreen = ({ navigation }) => {
     socket.on("deleteGroup", (call) => {
       fetchData();
     });
-    fetchData();
+    socket.on("retrieveLeaveGroup", (call) => {
+      fetchData();
+    });
   }, [socket]);
 
   const onFocusSearch = () => {
@@ -194,18 +197,20 @@ const ChatListScreen = ({ navigation }) => {
               />
             </View>
             <View style={styles.row}>
-              <Avatar
-                size={30}
-                rounded
-                title={
-                  item.members && item.members.length > 1
-                    ? extendFunctions.getAvatarName(item.members[1].name)
-                    : ""
-                }
-                containerStyle={{
-                  backgroundColor: item.members[1].avatar.color,
-                }}
-              />
+              {item.members && item.members[1] ? (
+                <Avatar
+                  size={30}
+                  rounded
+                  title={
+                    item.members && item.members.length > 1
+                      ? extendFunctions.getAvatarName(item.members[1].name)
+                      : ""
+                  }
+                  containerStyle={{
+                    backgroundColor: item.members[1].avatar.color,
+                  }}
+                />
+              ) : null}
               {item.members && item.members[2] ? (
                 <Avatar
                   size={30}

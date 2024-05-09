@@ -57,6 +57,7 @@ const initAppRoutes = (app) => {
     groupController.handlerRetrieveMessenger
   );
   router.post("/delete-message-group", groupController.handlerDeleteMessenger);
+  router.post("/leader-leave-group", groupController.handlerLeaderLeaveGroup);
   // Gif Route
   router.post("/add-gif", gifController.handlerAddGif);
   router.post("/get-all-gif", gifController.handlerGetAllGif);
