@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import validator from "validator";
 
 const userSchema = new mongoose.Schema(
   {
@@ -14,6 +16,8 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       require: true,
+      validate: validator.isEmail,
+      unique: true,
     },
     password: {
       type: String,
@@ -149,5 +153,31 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.pre("save", function (next) {
+  if (!this.isModified("password")) return next();
+  const salt = bcrypt.genSaltSync(12);
+  this.password = bcrypt.hashSync(this.password, salt);
+  next();
+});
+
+userSchema.pre("updateOne", async function (next) {
+  const update = this.getUpdate();
+  if (update.password) {
+    const user = await this.model.findOne(this.getQuery());
+    if (user && user.password !== update.password) {
+      const salt = await bcrypt.genSalt(12);
+      const hashedPassword = await bcrypt.hash(update.password, salt);
+      update.password = hashedPassword;
+    }
+    next();
+  }
+  next();
+});
+
+userSchema.methods.comparePassword = function (currentPassword, userPassword) {
+  return bcrypt.compareSync(currentPassword, userPassword);
+};
+
 const User = mongoose.model("User", userSchema);
 module.exports = User;
