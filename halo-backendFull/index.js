@@ -20,7 +20,7 @@ app.use(
   cors({
     allowedHeaders: ["authorization", "Content-Type"], // you can change the headers
     exposedHeaders: ["authorization"], // you can change the headers
-    origin: [process.env.URL_CLIENT, "http://192.168.1.2:3000"],
+    origin: [process.env.URL_CLIENT, "http://localhost:3000"],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     preflightContinue: false,
     credentials: true,
@@ -40,7 +40,7 @@ connectDB();
 initAppRoutes(app);
 app.use("/auth", authRoute);
 app.use("/user", userRoute);
-const ip = "172.16.34.202";
+// const ip = "172.16.34.202";
 
 // Config SocketIO
 const server = require("http").Server(app);

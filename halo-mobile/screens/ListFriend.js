@@ -94,12 +94,7 @@ const FriendListScreen = ({ navigation }) => {
             color="white"
             style={styles.searchIcon}
           />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search"
-            value={searchQuery}
-            onChangeText={(text) => setSearchQuery(text)}
-          />
+          <Text style={styles.searchInput}>Search</Text>
           {searchQuery !== "" && (
             <TouchableOpacity onPress={clearSearch}>
               <Ionicons

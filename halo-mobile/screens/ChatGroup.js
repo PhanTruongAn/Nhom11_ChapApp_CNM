@@ -38,6 +38,7 @@ import { sendMessInGroup } from "../config/configSocket";
 import groupApi from "../api/groupApi";
 import Constants from "expo-constants";
 import gifApi from "../api/gifApi";
+import { Video } from "expo-av";
 const EmojiBoard = ({ onEmojiPick, isVisible, onClose }) => {
   const emojis = [
     "😀",
@@ -158,6 +159,7 @@ const ChatGroup = ({ navigation }) => {
   const [isGifModalVisible, setGifModalVisible] = useState(false);
   const [selectedGif, setSelectedGif] = useState(null);
   const [allGif, setAllGif] = useState([]);
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const getGiff = async () => {
     const result = await gifApi.getAllGif();
     setAllGif(result.DT);
@@ -170,8 +172,8 @@ const ChatGroup = ({ navigation }) => {
     setGifModalVisible(true);
     Keyboard.dismiss();
     setEmojiVisible(false);
-    if (selectedImage !== null) {
-      Alert.alert("Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi gif");
+    if (selectedImage !== null || selectedVideo !== null) {
+      Alert.alert("Bạn chỉ có thể gửi ảnh,video hoặc xóa ảnh,video để gửi gif");
       setGifModalVisible(false);
     }
   };
@@ -247,9 +249,11 @@ const ChatGroup = ({ navigation }) => {
   };
   //Chon anh
   const handleImagePick = async () => {
+    handleDeleteVideo();
     setNewMessage("");
     setEmojiVisible(false);
     Keyboard.dismiss();
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
@@ -464,12 +468,13 @@ const ChatGroup = ({ navigation }) => {
   };
   console.log("Check:", isEmojiVisible);
   const handleOpenEmojiBoard = () => {
-    if (selectedImage === null) {
+    if (selectedImage === null && selectedVideo == null) {
       Keyboard.dismiss();
       setEmojiVisible(true);
+      setGifModalVisible(false);
     } else {
       Alert.alert(
-        "Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi tin nhắn bình thường"
+        "Bạn chỉ có thể gửi ảnh, video hoặc xóa ảnh, video để gửi tin nhắn bình thường"
       );
     }
   };
@@ -509,16 +514,157 @@ const ChatGroup = ({ navigation }) => {
       console.error("Lỗi khi gửi gif:", error);
     }
   };
+  ///ham chon video
+  const handleVideoPick = async () => {
+    try {
+      setNewMessage("");
+      setEmojiVisible(false);
+      Keyboard.dismiss();
+      setGifModalVisible(false);
+      setSelectedImage(null);
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        alert("Cần cấp quyền để truy cập thư viện phương tiện");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.cancelled) {
+        setSelectedVideo(result.uri);
+      }
+    } catch (error) {
+      console.error("Lỗi khi chọn video:", error);
+    }
+  };
+  //xoa video
+  const handleDeleteVideo = () => {
+    setSelectedVideo(null);
+  };
+  //update video len s3
+  const handlerUploadVideoToS3 = async (selectedVideo) => {
+    try {
+      const videoUri = selectedVideo;
+      const videoInfo = await FileSystem.getInfoAsync(videoUri);
+      const videoBase64 = await FileSystem.readAsStringAsync(videoUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const arrayBuffer = base64ToArrayBuffer(videoBase64);
+
+      const fileName = `${userSender._id}-${Date.now()}.mp4`;
+
+      const params = {
+        Bucket: "videochathalo",
+        Key: fileName,
+        Body: arrayBuffer,
+        ContentType: videoInfo.mimeType,
+      };
+      const videoUrl = await s3
+        .upload(params)
+        .promise()
+        .then((data) => data.Location);
+      console.log("Upload video thành công:", videoUrl);
+      return videoUrl; // Trả về giá trị videoUrl cho hàm gọi
+    } catch (error) {
+      Alert.alert("Có lỗi xảy ra khi tải video lên");
+      return null; // Trả về null nếu có lỗi
+    }
+  };
+  //ham chat video
+  const handleSendVideo = async () => {
+    if (selectedVideo) {
+      try {
+        const videoUrl = await handlerUploadVideoToS3(selectedVideo);
+        console.log("Link video:", videoUrl);
+
+        if (videoUrl) {
+          const data = {
+            idMessenger: await generateUUID(),
+            sender: userSender._id,
+            isDeleted: false,
+            groupId: groupData._id,
+            text: `${videoUrl}`,
+            createdAt: Date.now(),
+            receiver: memberFilter,
+          };
+
+          // Gửi tin nhắn qua socket
+          sendMessInGroup({
+            ...data,
+            sender: userSender,
+            isDeleted: false,
+          });
+
+          // Cập nhật UI ngay lập tức
+          setMessages((prevState) => [
+            ...prevState,
+            {
+              idMessenger: data.idMessenger,
+              sender: userSender,
+              isDeleted: data.isDeleted,
+              groupId: data.groupId,
+              text: data.text,
+              createdAt: data.createdAt,
+            },
+          ]);
+
+          const res = await groupApi.sendMessGroup(data);
+          setSelectedVideo(null);
+          console.log(res);
+        }
+      } catch (error) {
+        console.error("Lỗi khi gửi video:", error);
+      }
+    }
+  };
+  //hien video chon
+  const SelectedVideoPreview = ({ videoUri, onDelete, onSend }) => {
+    return (
+      <View style={[styles.selectedImageContainer, styles.centeredContent]}>
+        <View style={styles.selectedImage}>
+          <Video
+            source={{ uri: videoUri }}
+            style={{ width: "100%", height: "100%" }}
+            resizeMode="contain"
+          />
+        </View>
+
+        <View style={styles.imageButtonsContainer}>
+          <TouchableOpacity onPress={onDelete} style={styles.imageButtonXoa}>
+            <Text style={styles.imageButtonText}>Xóa video</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onSend} style={styles.imageButton}>
+            <Text style={styles.imageButtonText}>Gửi video</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
   const renderItem = ({ item }) => (
     <Pressable onPress={() => handleSelectMessage(item.idMessenger)}>
       {item.sender._id !== userSender._id && (
         <View style={{ position: "absolute", top: 15 }}>
-          <Avatar
-            size={30}
-            rounded
-            title={extendFunctions.getAvatarName(item.sender.name)}
-            containerStyle={{ backgroundColor: item.sender.avatar.color }}
-          />
+          {item.sender.avatar.uri ? ( // Nếu chưa chọn ảnh mới, nhưng người dùng đã có ảnh, hiển thị ảnh của người dùng
+            <Avatar
+              size={30}
+              rounded
+              source={{ uri: item.sender.avatar.uri }}
+            />
+          ) : (
+            // Nếu chưa chọn ảnh mới và người dùng cũng chưa có ảnh, hiển thị avatar mặc định
+            <Avatar
+              size={30}
+              rounded
+              title={extendFunctions.getAvatarName(item.sender.name)}
+              containerStyle={{ backgroundColor: item.sender.avatar.color }}
+            />
+          )}
         </View>
       )}
       <View
@@ -566,17 +712,38 @@ const ChatGroup = ({ navigation }) => {
         ) ||
         item.text.includes(
           "https://gifchathalo.s3.ap-southeast-1.amazonaws.com"
+        ) ||
+        item.text.includes(
+          "https://videochathalo.s3.ap-southeast-1.amazonaws.com"
         ) ? (
-          <View style={{ width: 150, height: 200, marginBottom: 10 }}>
-            <Image
-              source={{ uri: item.text }}
-              style={{
-                width: "100%",
-                height: "100%",
-                resizeMode: "contain",
-              }}
-            />
-          </View>
+          item.isDeleted ? (
+            <Text style={styles.messageContent}>Tin nhắn đã thu hồi</Text>
+          ) : (
+            <View style={{ width: 150, height: 200, marginRight: 10 }}>
+              {item.text.includes(
+                "https://videochathalo.s3.ap-southeast-1.amazonaws.com"
+              ) ? (
+                <Video
+                  source={{ uri: item.text }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode="contain"
+                  useNativeControls
+                />
+              ) : (
+                <Image
+                  source={{
+                    uri: item.text,
+                  }}
+                  style={{
+                    resizeMode: "contain",
+                    width: "100%",
+                    height: "100%",
+                    marginBottom: 10,
+                  }}
+                />
+              )}
+            </View>
+          )
         ) : (
           <Text style={styles.messageContent}>
             {item.isDeleted ? "Tin nhắn đã thu hồi" : item.text}
@@ -651,6 +818,12 @@ const ChatGroup = ({ navigation }) => {
         >
           <MaterialIcons name="gif" size={24} color="white" />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.iconPickerButton}
+          onPress={handleVideoPick}
+        >
+          <MaterialIcons name="videocam" size={24} color="white" />
+        </TouchableOpacity>
         <TextInput
           style={styles.input}
           placeholder="Type a message..."
@@ -661,11 +834,11 @@ const ChatGroup = ({ navigation }) => {
             }
           }}
           onChangeText={(e) => {
-            if (selectedImage === null) {
+            if (selectedImage === null && selectedVideo === null) {
               setNewMessage(e);
             } else {
               Alert.alert(
-                "Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi tin nhắn bình thường"
+                "Bạn chỉ có thể gửi ảnh, video hoặc xóa ảnh, video để gửi tin nhắn bình thường"
               );
             }
           }}
@@ -710,7 +883,7 @@ const ChatGroup = ({ navigation }) => {
 
           <View style={styles.imageButtonsContainer}>
             <TouchableOpacity
-              // onPress={handleDeleteImage}
+              onPress={handleDeleteImage}
               style={styles.imageButtonXoa}
             >
               <Text style={styles.imageButtonText}>Xóa ảnh</Text>
@@ -720,6 +893,13 @@ const ChatGroup = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
+      )}
+      {selectedVideo && (
+        <SelectedVideoPreview
+          videoUri={selectedVideo}
+          onDelete={handleDeleteVideo}
+          onSend={handleSendVideo}
+        />
       )}
       <Modal
         visible={isIconPickerModalVisible}
@@ -812,11 +992,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#eee",
     borderRadius: 8,
     marginRight: 10,
+    width: "80%",
   },
   sendButton: {
     flexDirection: "row",
     backgroundColor: "#3498db",
-    padding: 8,
+    padding: 7,
     borderRadius: 8,
     alignItems: "center",
   },

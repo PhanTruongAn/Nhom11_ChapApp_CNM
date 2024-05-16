@@ -19,6 +19,7 @@ import * as ImagePicker from "expo-image-picker";
 import AWS from "aws-sdk";
 import * as FileSystem from "expo-file-system";
 import { decode } from "base-64";
+import Constants from "expo-constants";
 
 const EditInformation = ({ navigation }) => {
   const user = useSelector((state) => state.userLogin.user);
@@ -59,10 +60,11 @@ const EditInformation = ({ navigation }) => {
   };
 
   // Thực hiện cấu hình AWS SDK với thông tin xác thực của bạn
+  const { ACCESS_KEY, SECRET_KEY, REGION } = Constants.manifest.extra;
   AWS.config.update({
-    accessKeyId: process.env.ACCESS_KEY,
-    secretAccessKey: process.env.SECRET_KEY,
-    region: process.env.REGION,
+    accessKeyId: ACCESS_KEY,
+    secretAccessKey: SECRET_KEY,
+    region: REGION,
   });
 
   const s3 = new AWS.S3();

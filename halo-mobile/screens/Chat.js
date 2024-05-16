@@ -39,6 +39,7 @@ import { decode } from "base-64";
 import * as Crypto from "expo-crypto";
 import Constants from "expo-constants";
 import gifApi from "../api/gifApi";
+import { Video } from "expo-av";
 
 const EmojiBoard = ({ onEmojiPick, isVisible, onClose }) => {
   const emojis = [
@@ -156,6 +157,8 @@ const ChatScreen = ({ navigation }) => {
   const [selectedIcon, setSelectedIcon] = useState("");
   const [isEmojiVisible, setEmojiVisible] = useState(false);
   const [allGif, setAllGif] = useState([]);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+
   const getGiff = async () => {
     const result = await gifApi.getAllGif();
     setAllGif(result.DT);
@@ -233,6 +236,7 @@ const ChatScreen = ({ navigation }) => {
     setEmojiVisible(false);
     Keyboard.dismiss();
     setGifModalVisible(false);
+    setSelectedVideo(null);
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
@@ -431,13 +435,13 @@ const ChatScreen = ({ navigation }) => {
   };
   console.log("Check:", isEmojiVisible);
   const handleOpenEmojiBoard = () => {
-    if (selectedImage === null) {
+    if (selectedImage === null && selectedVideo == null) {
       Keyboard.dismiss();
       setEmojiVisible(true);
       setGifModalVisible(false);
     } else {
       Alert.alert(
-        "Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi tin nhắn bình thường"
+        "Bạn chỉ có thể gửi ảnh, video hoặc xóa ảnh, video để gửi tin nhắn bình thường"
       );
     }
   };
@@ -447,8 +451,8 @@ const ChatScreen = ({ navigation }) => {
     setGifModalVisible(true);
     Keyboard.dismiss();
     setEmojiVisible(false);
-    if (selectedImage !== null) {
-      Alert.alert("Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi gif");
+    if (selectedImage !== null || selectedVideo !== null) {
+      Alert.alert("Bạn chỉ có thể gửi ảnh,video hoặc xóa ảnh,video để gửi gif");
       setGifModalVisible(false);
     }
   };
@@ -492,16 +496,153 @@ const ChatScreen = ({ navigation }) => {
       console.error("Lỗi khi gửi gif:", error);
     }
   };
+  ///ham chon video
+  const handleVideoPick = async () => {
+    try {
+      setNewMessage("");
+      setEmojiVisible(false);
+      Keyboard.dismiss();
+      setGifModalVisible(false);
+      setSelectedImage(null);
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        alert("Cần cấp quyền để truy cập thư viện phương tiện");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.cancelled) {
+        setSelectedVideo(result.uri);
+      }
+    } catch (error) {
+      console.error("Lỗi khi chọn video:", error);
+    }
+  };
+  //xoa video
+  const handleDeleteVideo = () => {
+    setSelectedVideo(null);
+  };
+  //update video len s3
+  const handlerUploadVideoToS3 = async (selectedVideo) => {
+    try {
+      const videoUri = selectedVideo;
+      const videoInfo = await FileSystem.getInfoAsync(videoUri);
+      const videoBase64 = await FileSystem.readAsStringAsync(videoUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const arrayBuffer = base64ToArrayBuffer(videoBase64);
+
+      const fileName = `${userSender._id}-${Date.now()}.mp4`;
+
+      const params = {
+        Bucket: "videochathalo",
+        Key: fileName,
+        Body: arrayBuffer,
+        ContentType: videoInfo.mimeType,
+      };
+      const videoUrl = await s3
+        .upload(params)
+        .promise()
+        .then((data) => data.Location);
+      console.log("Upload video thành công:", videoUrl);
+      return videoUrl; // Trả về giá trị videoUrl cho hàm gọi
+    } catch (error) {
+      Alert.alert("Có lỗi xảy ra khi tải video lên");
+      return null; // Trả về null nếu có lỗi
+    }
+  };
+  //ham chat video
+  const handleSendVideo = async () => {
+    if (selectedVideo) {
+      try {
+        const videoUrl = await handlerUploadVideoToS3(selectedVideo);
+        console.log("Link video:", videoUrl);
+
+        if (videoUrl) {
+          const data = {
+            idMessenger: await generateUUID(),
+            sender: userSender.phone,
+            receiver: userReceiver.phone,
+            text: `${videoUrl}`,
+            createdAt: Date.now(),
+          };
+
+          setMessages([
+            ...messages,
+            {
+              ...data,
+              sender: userSender._id,
+              text: data.text,
+              receiver: userReceiver._id,
+              isDeleted: false,
+            },
+          ]);
+
+          senderMessenger({
+            ...data,
+            isDeleted: false,
+          });
+
+          const res = await chatApi.sendMessenger(data);
+          setSelectedVideo(null);
+          console.log(res);
+        }
+      } catch (error) {
+        console.error("Lỗi khi gửi video:", error);
+      }
+    }
+  };
+
+  //hien video chon
+  const SelectedVideoPreview = ({ videoUri, onDelete, onSend }) => {
+    return (
+      <View style={[styles.selectedImageContainer, styles.centeredContent]}>
+        <View style={styles.selectedImage}>
+          <Video
+            source={{ uri: videoUri }}
+            style={{ width: "100%", height: "100%" }}
+            resizeMode="contain"
+          />
+        </View>
+
+        <View style={styles.imageButtonsContainer}>
+          <TouchableOpacity onPress={onDelete} style={styles.imageButtonXoa}>
+            <Text style={styles.imageButtonText}>Xóa video</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onSend} style={styles.imageButton}>
+            <Text style={styles.imageButtonText}>Gửi video</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   const renderItem = ({ item }) => (
     <Pressable onPress={() => handleSelectMessage(item.idMessenger)}>
       {item.sender !== userSender._id && (
         <View style={{ position: "absolute", top: 15 }}>
-          <Avatar
-            size={30}
-            rounded
-            title={extendFunctions.getAvatarName(userReceiver.name)}
-            containerStyle={{ backgroundColor: userReceiver.avatar.color }}
-          />
+          {userReceiver.avatar.uri ? ( // Nếu chưa chọn ảnh mới, nhưng người dùng đã có ảnh, hiển thị ảnh của người dùng
+            <Avatar
+              size={30}
+              rounded
+              source={{ uri: userReceiver.avatar.uri }}
+            />
+          ) : (
+            // Nếu chưa chọn ảnh mới và người dùng cũng chưa có ảnh, hiển thị avatar mặc định
+            <Avatar
+              size={30}
+              rounded
+              title={extendFunctions.getAvatarName(userReceiver.name)}
+              containerStyle={{ backgroundColor: userReceiver.avatar.color }}
+            />
+          )}
         </View>
       )}
       <View
@@ -512,59 +653,72 @@ const ChatScreen = ({ navigation }) => {
         }
       >
         {item.sender === userSender._id &&
-        selectedMessage === item.idMessenger &&
-        !item.isDeleted ? (
-          <View
-            style={{
-              position: "absolute",
-              left: -110,
-              top: 30,
-              backgroundColor: "#f1f1f5",
-              borderRadius: 8,
-              height: 25,
-              width: 100,
-              flexDirection: "row",
-              justifyContent: "space-evenly",
-            }}
-          >
-            <TouchableOpacity onPress={handlerDeleteMessage}>
-              <MaterialIcons name="delete" size={20} color="gray" />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Ionicons
-                name="reload"
-                size={20}
-                color="gray"
-                onPress={() => handleRetrieveMessage(item.idMessenger)}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <AntDesign name="back" size={20} color="gray" />
-            </TouchableOpacity>
-          </View>
-        ) : null}
+          selectedMessage === item.idMessenger && (
+            <View
+              style={{
+                position: "absolute",
+                left: -110,
+                top: 30,
+                backgroundColor: "#f1f1f5",
+                borderRadius: 8,
+                height: 25,
+                width: 100,
+                flexDirection: "row",
+                justifyContent: "space-evenly",
+              }}
+            >
+              <TouchableOpacity onPress={handlerDeleteMessage}>
+                <MaterialIcons name="delete" size={20} color="gray" />
+              </TouchableOpacity>
+              <TouchableOpacity>
+                <Ionicons
+                  name="reload"
+                  size={20}
+                  color="gray"
+                  onPress={() => handleRetrieveMessage(item.idMessenger)}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity>
+                <AntDesign name="back" size={20} color="gray" />
+              </TouchableOpacity>
+            </View>
+          )}
 
         {item.text.includes(
           "https://imagemessagehalo.s3.ap-southeast-1.amazonaws.com"
         ) ||
         item.text.includes(
           "https://gifchathalo.s3.ap-southeast-1.amazonaws.com"
+        ) ||
+        item.text.includes(
+          "https://videochathalo.s3.ap-southeast-1.amazonaws.com"
         ) ? (
           item.isDeleted ? (
             <Text style={styles.messageContent}>Tin nhắn đã thu hồi</Text>
           ) : (
             <View style={{ width: 150, height: 200, marginRight: 10 }}>
-              <Image
-                source={{
-                  uri: item.text,
-                }}
-                style={{
-                  resizeMode: "contain",
-                  width: "100%",
-                  height: "100%",
-                  marginBottom: 10,
-                }}
-              />
+              {item.text.includes(
+                "https://videochathalo.s3.ap-southeast-1.amazonaws.com"
+              ) ? (
+                <Video
+                  source={{ uri: item.text }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode="contain"
+                  useNativeControls
+                />
+              ) : (
+                <Image
+                  source={{
+                    uri: item.text,
+                  }}
+                  style={{
+                    resizeMode: "contain",
+                    width: "100%",
+                    height: "100%",
+                    marginBottom: 10,
+                  }}
+                />
+              )}
             </View>
           )
         ) : (
@@ -633,6 +787,13 @@ const ChatScreen = ({ navigation }) => {
         >
           <MaterialIcons name="gif" size={24} color="white" />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.iconPickerButton}
+          onPress={handleVideoPick}
+        >
+          <MaterialIcons name="videocam" size={24} color="white" />
+        </TouchableOpacity>
+
         <TextInput
           style={styles.input}
           placeholder="Type a message..."
@@ -646,11 +807,11 @@ const ChatScreen = ({ navigation }) => {
             }
           }}
           onChangeText={(e) => {
-            if (selectedImage === null) {
+            if (selectedImage === null && selectedVideo === null) {
               setNewMessage(e);
             } else {
               Alert.alert(
-                "Bạn chỉ có thể gửi ảnh hoặc xóa ảnh để gửi tin nhắn bình thường"
+                "Bạn chỉ có thể gửi ảnh, video hoặc xóa ảnh, video để gửi tin nhắn bình thường"
               );
             }
           }}
@@ -706,6 +867,13 @@ const ChatScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
+      )}
+      {selectedVideo && (
+        <SelectedVideoPreview
+          videoUri={selectedVideo}
+          onDelete={handleDeleteVideo}
+          onSend={handleSendVideo}
+        />
       )}
     </View>
   );
@@ -790,6 +958,7 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "#eee",
     borderRadius: 8,
+    width: "80%",
     marginRight: 10,
   },
   sendButton: {

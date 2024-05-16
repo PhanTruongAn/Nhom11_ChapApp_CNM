@@ -108,6 +108,7 @@ const GetAllGroupsWithLatestMessage = async (data) => {
           let data = await GroupMessenger.find({
             group: new mongoose.Types.ObjectId(item._id),
           })
+
             .sort({ createdAt: "desc" })
             .populate("sender")
             .populate({
@@ -119,6 +120,7 @@ const GetAllGroupsWithLatestMessage = async (data) => {
             })
             // .limit(1)
             .exec();
+
           if (data && data.length > 0) {
             return data[0];
           } else {

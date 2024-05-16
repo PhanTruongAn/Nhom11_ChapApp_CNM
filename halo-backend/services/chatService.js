@@ -108,63 +108,7 @@ const getAllUserByChat = async (data) => {
     };
   }
 };
-// const findDistinctUsers = async (user) => {
-//   try {
-//     // Tìm tất cả các tin nhắn mà người dùng có ID đã cung cấp đã gửi hoặc nhận
-//     const messages = await PrivateMessenger.find({
-//       $or: [{ sender: user._id }, { receiver: user._id }],
-//     });
 
-//     // Tạo một mảng rỗng để chứa các ID người dùng duy nhất
-//     const distinctUsers = [];
-
-//     // Lặp qua tất cả các tin nhắn và lấy ID của người gửi và người nhận khác với người dùng đã cung cấp
-//     messages.forEach((message) => {
-//       if (
-//         message.sender.toString() !== user._id &&
-//         !distinctUsers.includes(message.sender.toString())
-//       ) {
-//         distinctUsers.push(message.sender.toString());
-//       }
-//       if (
-//         message.receiver.toString() !== user._id &&
-//         !distinctUsers.includes(message.receiver.toString())
-//       ) {
-//         distinctUsers.push(message.receiver.toString());
-//       }
-//     });
-
-//     const usersInfo = await User.find(
-//       { _id: { $in: distinctUsers } },
-//       {
-//         _id: 1,
-//         name: 1,
-//         phone: 1,
-//         // email: 1,
-//         avatar: 1,
-//         // sex: 1,
-//         // dateOfBirth: 1,
-//         isActive: 1,
-//         // friendRequests: 1,
-//         // sendFriendRequests: 1,
-//         // friends: 1,
-//       }
-//     );
-
-//     return {
-//       EM: "Get all distinct users is success!",
-//       EC: 0,
-//       DT: usersInfo,
-//     };
-//   } catch (error) {
-//     console.error("Error finding distinct users:", error);
-//     return {
-//       EM: "Something went wrong on the server",
-//       EC: 1,
-//       DT: [],
-//     };
-//   }
-// };
 const findDistinctUsers = async (user) => {
   try {
     // Tìm tất cả các tin nhắn mà người dùng có ID đã cung cấp đã gửi hoặc nhận
@@ -183,6 +127,7 @@ const findDistinctUsers = async (user) => {
             userId: message.sender,
             lastMessage: message.text,
             lastMessageTime: message.createdAt,
+            isDeleted: message.isDeleted,
           };
         } else {
           // So sánh thời gian của tin nhắn hiện tại với tin nhắn cuối cùng đã lưu trữ
@@ -202,6 +147,7 @@ const findDistinctUsers = async (user) => {
             userId: message.receiver,
             lastMessage: message.text,
             lastMessageTime: message.createdAt,
+            isDeleted: message.isDeleted,
           };
         } else {
           // So sánh thời gian của tin nhắn hiện tại với tin nhắn cuối cùng đã lưu trữ
@@ -239,9 +185,10 @@ const findDistinctUsers = async (user) => {
         ...userInfo.toObject(),
         lastMessage: user.lastMessage,
         lastMessageTime: user.lastMessageTime,
+        isDeleted: user.isDeleted,
       };
     });
-
+    console.log(usersWithLastMessage);
     return {
       EM: "Get all distinct users with last messages is success!",
       EC: 0,

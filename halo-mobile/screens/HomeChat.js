@@ -45,6 +45,7 @@ const ChatListScreen = ({ navigation }) => {
     if (req) {
       dispatch(updateUser(req.DT));
       const conversation = await chatApi.getConversation(req.DT);
+      console.log("Conversation: ", conversation);
       const groups = await groupApi.getAllGroup(req.DT);
       const latestGroup = await groupApi.getLatestMesGroup(req.DT);
       const newArray = latestGroup.DT.map((item) => ({
@@ -52,6 +53,7 @@ const ChatListScreen = ({ navigation }) => {
         latestMessage: {
           createdAt: item.createdAt,
           text: item.text,
+          isDeleted: item.isDeleted,
         },
       }));
       // Sử dụng reduce để kết hợp các thông tin
@@ -60,15 +62,13 @@ const ChatListScreen = ({ navigation }) => {
           ?.latestMessage || {
           createdAt: "",
           text: "",
+          // isDeleted: item.isDeleted,
         };
         return {
           ...group,
           latestMessage,
         };
       });
-
-      console.log("Group with latest message:", result);
-      console.log("Groups: ", groups.DT);
       dispatch(initUsers(conversation.DT));
       dispatch(groupConversation(result));
       // console.log("Conversation: ", conversation);
@@ -239,7 +239,19 @@ const ChatListScreen = ({ navigation }) => {
       <View style={styles.content}>
         <Text style={styles.name}>{item.name}</Text>
         {item.latestMessage && (
-          <Text style={styles.message}>{item.latestMessage.text}</Text>
+          <Text style={styles.message}>
+            {item.latestMessage.isDeleted
+              ? "Tin nhắn đã được thu hồi"
+              : item.latestMessage.text.includes(
+                  "https://gifchathalo.s3.ap-southeast-1.amazonaws.com"
+                )
+              ? "[GIF]"
+              : item.latestMessage.text.includes(
+                  "https://videochathalo.s3.ap-southeast-1.amazonaws.com"
+                )
+              ? "[Video]"
+              : item.latestMessage.text}
+          </Text>
         )}
         {item.lastMessage && (
           <Text style={styles.message}>
@@ -331,6 +343,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     alignItems: "center",
     marginRight: -10,
+    alignSelf: "center",
   },
   screen: {
     flex: 1,
