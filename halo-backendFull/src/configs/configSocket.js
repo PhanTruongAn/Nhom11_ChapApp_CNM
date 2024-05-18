@@ -32,10 +32,27 @@ const configSocket = (server) => {
             customId: data.customId,
             clientId: socket.id,
           };
+
           clients.push(clientInfo);
         }
 
         console.log(clients);
+      }
+    });
+    socket.on("reload", (data) => {
+      socket.emit("reload", data);
+    });
+    socket.on("receiveMess", (data) => {
+      let receiver = data.receiver;
+      if (clients && clients.length > 0) {
+        let index = clients.findIndex(
+          (item) => item.customId.localeCompare(receiver) === 0
+        );
+        if (index !== -1) {
+          socket.to(clients[index].clientId).emit("receiveMess");
+        } else {
+          console.log("test error");
+        }
       }
     });
     socket.on("sendtest", (data) => {
@@ -217,7 +234,20 @@ const configSocket = (server) => {
     socket.on("sendMessengerInGroup", (data) => {
       socket.to(data.groupId).emit("test", data);
     });
+    socket.on("testreload", (data) => {
+      const rs = data.receiver;
 
+      // const receiversIndex = [];
+      for (let i = 0; i < rs.length; i++) {
+        let index = clients.findIndex(
+          (item) => item.customId.localeCompare(rs[i].phone) === 0
+        );
+        if (index !== -1) {
+          console.log("Receivers:", clients[index].clientId);
+          socket.to(clients[index].clientId).emit("receiveMessGroup");
+        }
+      }
+    });
     socket.on("retrieveMessGroup", (data) => {
       // console.log("CallbackRetrieve: ", data);
       socket.to(data.group).emit("RetrieveMessGroup", data);
@@ -239,6 +269,9 @@ const configSocket = (server) => {
     socket.on("retrieveMessGroup", (data) => {
       // console.log("CallbackRetrieve: ", data);
       socket.to(data.group).emit("RetrieveMessGroup", data);
+    });
+    socket.on("deleteGroup", (data) => {
+      io.to(data.groupId).emit("deleteGroup", data);
     });
     socket.on("leaveGroup", (data) => {
       console.log(`User ${data.member.name} left room: ${data.nameGroup}`);

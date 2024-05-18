@@ -188,67 +188,82 @@ const ChatListScreen = ({ navigation }) => {
           <View style={{ marginTop: -15 }}>
             <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
           </View>
-        ) : item.members ? (
-          <View style={styles.container}>
-            <View style={styles.row}>
-              <Avatar
-                size={30}
-                rounded
-                title={extendFunctions.getAvatarName(item.author.name)}
-                containerStyle={{
-                  backgroundColor: item.author.avatar.color,
-                }}
-              />
-              <Avatar
-                size={30}
-                rounded
-                title={
-                  item.members && item.members.length > 0
-                    ? extendFunctions.getAvatarName(item.members[0].name)
-                    : ""
-                }
-                containerStyle={{
-                  backgroundColor: item.members[0].avatar.color,
-                }}
-              />
-            </View>
-            <View style={styles.row}>
-              {item.members && item.members[1] ? (
-                <Avatar
-                  size={30}
-                  rounded
-                  title={
-                    item.members && item.members.length > 1
-                      ? extendFunctions.getAvatarName(item.members[1].name)
-                      : ""
-                  }
-                  containerStyle={{
-                    backgroundColor: item.members[1].avatar.color,
-                  }}
-                />
-              ) : null}
-              {item.members && item.members[2] ? (
-                <Avatar
-                  size={30}
-                  rounded
-                  titleStyle={{ color: "#7589a3", fontWeight: "600" }}
-                  title={
-                    item.members && item.members.length > 2
-                      ? `${item.members.length - 2}`
-                      : ""
-                  }
-                  containerStyle={{ backgroundColor: "#e6e8ea" }}
-                />
-              ) : null}
-            </View>
-          </View>
         ) : (
-          <Avatar
-            size={50}
-            rounded
-            title={extendFunctions.getAvatarName(item.name)}
-            containerStyle={{ backgroundColor: item.avatar.color }}
-          />
+          <View>
+            {item.members && item.members.length > 0 ? (
+              <View style={styles.container}>
+                <View style={styles.row}>
+                  <Avatar
+                    size={30}
+                    rounded
+                    title={extendFunctions.getAvatarName(item.author.name)}
+                    containerStyle={{
+                      backgroundColor: item.author.avatar.color,
+                    }}
+                    source={
+                      item.author.avatar.uri
+                        ? { uri: item.author.avatar.uri }
+                        : null
+                    }
+                  />
+                  <Avatar
+                    size={30}
+                    rounded
+                    title={extendFunctions.getAvatarName(item.members[0].name)}
+                    containerStyle={{
+                      backgroundColor: item.members[0].avatar.color,
+                    }}
+                    source={
+                      item.members[0].avatar.uri
+                        ? { uri: item.members[0].avatar.uri }
+                        : null
+                    }
+                  />
+                </View>
+                <View style={styles.row}>
+                  {item.members.length > 1 && (
+                    <Avatar
+                      size={30}
+                      rounded
+                      title={extendFunctions.getAvatarName(
+                        item.members[1].name
+                      )}
+                      containerStyle={{
+                        backgroundColor: item.members[1].avatar.color,
+                      }}
+                      source={
+                        item.members[1].avatar.uri
+                          ? { uri: item.members[1].avatar.uri }
+                          : null
+                      }
+                    />
+                  )}
+                  {item.members.length > 2 && (
+                    <Avatar
+                      size={30}
+                      rounded
+                      titleStyle={{ color: "#7589a3", fontWeight: "600" }}
+                      title={`${item.members.length - 2}`}
+                      containerStyle={{ backgroundColor: "#e6e8ea" }}
+                      source={
+                        item.members[2].avatar.uri
+                          ? { uri: item.members[2].avatar.uri }
+                          : null
+                      }
+                    />
+                  )}
+                </View>
+              </View>
+            ) : (
+              <Avatar
+                size={50}
+                rounded
+                title={extendFunctions.getAvatarName(item.name)}
+                containerStyle={{ backgroundColor: item.avatar.color }}
+                source={item.avatar.uri ? { uri: item.avatar.uri } : null}
+              />
+            )}
+          </View>
         )}
       </View>
 

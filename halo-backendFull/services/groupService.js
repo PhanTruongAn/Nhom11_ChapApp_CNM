@@ -216,6 +216,37 @@ const LeaderLeaveGroup = async (data) => {
     };
   }
 };
+const updateAvatarGroup = async (data) => {
+  try {
+    const _id = data._id;
+    const newAvatarUri = data.avatar.uri;
+    const updatedGroup = await Group.findByIdAndUpdate(
+      _id,
+      { "avatar.uri": newAvatarUri },
+      { new: true }
+    );
+    if (updatedGroup) {
+      return {
+        EM: "Update avatar group successfully!",
+        EC: 0,
+        DT: updatedGroup,
+      };
+    } else {
+      return {
+        EM: "No group found for the given id!",
+        EC: 0,
+        DT: null,
+      };
+    }
+  } catch (error) {
+    console.log("Error updating avatar group: ", error);
+    return {
+      EM: "Something went wrong on the server",
+      EC: 1,
+      DT: null,
+    };
+  }
+};
 module.exports = {
   CreateNewGroup,
   GetAllGroupByUserId,
@@ -224,4 +255,5 @@ module.exports = {
   DeleteGroupById,
   GetAllGroupsWithLatestMessage,
   LeaderLeaveGroup,
+  updateAvatarGroup,
 };

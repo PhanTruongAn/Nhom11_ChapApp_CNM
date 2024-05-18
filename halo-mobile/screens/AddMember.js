@@ -29,14 +29,18 @@ const CustomPopup = ({
 }) => {
   if (!isVisible) return null;
 
-  const renderAvatarItem = ({ item }) => (
-    <Avatar
-      size={50}
-      rounded
-      title={extendFunctions.getAvatarName(item.name)}
-      containerStyle={{ backgroundColor: item.avatar.color }}
-    />
-  );
+  const renderAvatarItem = ({ item }) =>
+    item.avatar.uri ? ( // Nếu chưa chọn ảnh mới, nhưng người dùng đã có ảnh, hiển thị ảnh của người dùng
+      <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
+    ) : (
+      // Nếu chưa chọn ảnh mới và người dùng cũng chưa có ảnh, hiển thị avatar mặc định
+      <Avatar
+        size={50}
+        rounded
+        title={extendFunctions.getAvatarName(item.name)}
+        containerStyle={{ backgroundColor: item.avatar.color }}
+      />
+    );
 
   return (
     <View style={styles.popupContainer}>
@@ -118,12 +122,17 @@ const AddMember = ({ navigation }) => {
       onPress={() => handleUserSelect(item)}
     >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <Avatar
-          size={50}
-          rounded
-          title={extendFunctions.getAvatarName(item.name)}
-          containerStyle={{ backgroundColor: item.avatar.color }}
-        />
+        {item.avatar.uri ? ( // Nếu chưa chọn ảnh mới, nhưng người dùng đã có ảnh, hiển thị ảnh của người dùng
+          <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
+        ) : (
+          // Nếu chưa chọn ảnh mới và người dùng cũng chưa có ảnh, hiển thị avatar mặc định
+          <Avatar
+            size={50}
+            rounded
+            title={extendFunctions.getAvatarName(item.name)}
+            containerStyle={{ backgroundColor: item.avatar.color }}
+          />
+        )}
         <Text
           style={{
             fontSize: 16,

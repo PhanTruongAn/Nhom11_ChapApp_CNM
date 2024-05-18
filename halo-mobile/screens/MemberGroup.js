@@ -74,12 +74,17 @@ const MemberGroup = ({ navigation }) => {
             justifyContent: "center",
           }}
         >
-          <Avatar
-            size={50}
-            rounded
-            title={extendFunctions.getAvatarName(item.name)}
-            containerStyle={{ backgroundColor: item.avatar.color }}
-          />
+          {item.avatar.uri ? ( // Nếu chưa chọn ảnh mới, nhưng người dùng đã có ảnh, hiển thị ảnh của người dùng
+            <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
+          ) : (
+            // Nếu chưa chọn ảnh mới và người dùng cũng chưa có ảnh, hiển thị avatar mặc định
+            <Avatar
+              size={50}
+              rounded
+              title={extendFunctions.getAvatarName(item.name)}
+              containerStyle={{ backgroundColor: item.avatar.color }}
+            />
+          )}
           <Text style={{ fontSize: 16, fontWeight: "500", marginLeft: 20 }}>
             {item.name}
           </Text>
