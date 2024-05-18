@@ -16,7 +16,7 @@ import extendFunctions from "../constants/extendFunctions";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser, updateUser } from "../redux/userSlice";
 import { groupConversation, lastMessenger } from "../redux/conversationSlice";
-import { handleCustomClient } from "../config/configSocket";
+import { handleCustomClient, reload } from "../config/configSocket";
 import chatApi from "../api/chatApi";
 import userApi from "../api/userApi";
 import groupApi from "../api/groupApi";
@@ -25,6 +25,7 @@ import { initUsers } from "../redux/conversationSlice";
 import { Pressable } from "react-native";
 import { handlerJoinRoom } from "../config/configSocket";
 import socket from "../config/configSocket";
+
 const ChatListScreen = ({ navigation }) => {
   const conversation = useSelector((state) => state.usersInit.users);
   // console.log("Conversation:", conversation);
@@ -32,7 +33,7 @@ const ChatListScreen = ({ navigation }) => {
   const [isReady, setIsReady] = useState(false); // Flag to track if useEffect is done
   const [isDataLoaded, setIsDataLoaded] = useState(false); // Flag to track if data is loaded from Redux
   const [chatList, setChatList] = useState([]);
-
+  const [newMess, setNewMess] = useState(false);
   ///////// Create Modal
   const [isModalVisible, setIsModalVisible] = useState(false);
   const toggleModal = () => {
@@ -45,7 +46,6 @@ const ChatListScreen = ({ navigation }) => {
     if (req) {
       dispatch(updateUser(req.DT));
       const conversation = await chatApi.getConversation(req.DT);
-      console.log("Conversation: ", conversation);
       const groups = await groupApi.getAllGroup(req.DT);
       const latestGroup = await groupApi.getLatestMesGroup(req.DT);
       const newArray = latestGroup.DT.map((item) => ({
@@ -104,6 +104,7 @@ const ChatListScreen = ({ navigation }) => {
       handleCustomClient({ customId: userLogin.phone });
     }
   }, [userLogin]);
+
   useEffect(() => {
     fetchData();
     socket.on("retrieve", (call) => {
@@ -116,6 +117,19 @@ const ChatListScreen = ({ navigation }) => {
       fetchData();
     });
     socket.on("retrieveLeaveGroup", (call) => {
+      fetchData();
+    });
+    socket.on("reload", (call) => {
+      fetchData();
+    });
+    socket.on("deleteGroup", (call) => {
+      fetchData();
+    });
+    socket.on("receiveMess", (call) => {
+      // setNewMess(true);
+      fetchData();
+    });
+    socket.on("receiveMessGroup", (call) => {
       fetchData();
     });
   }, [socket]);
@@ -150,7 +164,7 @@ const ChatListScreen = ({ navigation }) => {
   };
 
   const isImageURL = (url) => {
-    return url.toLowerCase().match(/\.(jpeg|jpg|gif|png)$/) != null;
+    return url.toLowerCase().match(/\.(jpeg|jpg|png)$/) != null;
   };
   const renderItem = ({ item }) => (
     <TouchableOpacity
@@ -169,9 +183,11 @@ const ChatListScreen = ({ navigation }) => {
       }}
       style={styles.itemContainer}
     >
-      <View style={{ padding: 8 }}>
+      <View style={{ padding: 8, alignSelf: "center" }}>
         {item.avatar.uri ? (
-          <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
+          <View style={{ marginTop: -15 }}>
+            <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
+          </View>
         ) : item.members ? (
           <View style={styles.container}>
             <View style={styles.row}>
@@ -255,7 +271,17 @@ const ChatListScreen = ({ navigation }) => {
         )}
         {item.lastMessage && (
           <Text style={styles.message}>
-            {isImageURL(item.lastMessage) ? "Đã gửi 1 ảnh" : item.lastMessage}
+            {item.lastMessage.includes(
+              "https://gifchathalo.s3.ap-southeast-1.amazonaws.com"
+            )
+              ? "[GIF]"
+              : item.lastMessage.includes(
+                  "https://videochathalo.s3.ap-southeast-1.amazonaws.com"
+                )
+              ? "[Video]"
+              : isImageURL(item.lastMessage)
+              ? "Đã gửi 1 ảnh"
+              : item.lastMessage}
           </Text>
         )}
       </View>
@@ -296,7 +322,9 @@ const ChatListScreen = ({ navigation }) => {
           <Feather name="plus" size={24} color="white" />
         </TouchableOpacity>
       </TouchableOpacity>
+
       <FlatList data={conversation} renderItem={renderItem} />
+
       <Modal
         animationType="none"
         transparent={true}
@@ -410,6 +438,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#ddd",
+    top: 10,
   },
   avatarPlaceholder: {
     width: 50,
@@ -433,6 +462,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     color: "#777",
+    // color: "black",
+    marginLeft: 15,
+    marginTop: 18,
+  },
+  messageNew: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "black",
     marginLeft: 15,
     marginTop: 18,
   },

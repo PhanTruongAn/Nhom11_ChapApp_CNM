@@ -67,7 +67,9 @@ const receiveMessenger = () => {
 const retrieveMessenger = (data) => {
   socket.emit("retrieveMessenger", data);
 };
-
+const reload = (data) => {
+  socket.emit("reload", data);
+};
 // Group Socket
 const createGroup = (data) => {
   socket.emit("createGroup", data);
@@ -89,6 +91,12 @@ const retrieveMessGroup = (data) => {
 };
 const leaveGroup = (data) => {
   socket.emit("leaveGroup", data);
+};
+const receiveMess = (data) => {
+  socket.emit("receiveMess", data);
+};
+const receiveMessGroup = (data) => {
+  socket.emit("testreload", data);
 };
 export default socket;
 export {
@@ -114,4 +122,7 @@ export {
   deleteGroupSocket,
   retrieveMessGroup,
   leaveGroup,
+  reload,
+  receiveMess,
+  receiveMessGroup,
 };

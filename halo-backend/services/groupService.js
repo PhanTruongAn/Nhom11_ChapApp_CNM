@@ -190,30 +190,38 @@ const DeleteGroupById = async (data) => {
     };
   }
 };
-const LeaderLeaveGroup = async (data) => {
+const updateAvatarGroup = async (data) => {
   try {
-    const item = data.member;
-    const updatedGroup = await Group.findOneAndUpdate(
-      { _id: data._id },
-      { $pull: { members: item }, $set: { author: item } },
+    const _id = data._id;
+    const newAvatarUri = data.avatar.uri;
+    const updatedGroup = await Group.findByIdAndUpdate(
+      _id,
+      { "avatar.uri": newAvatarUri },
       { new: true }
-    )
-      .populate("author", "_id name phone email avatar")
-      .populate("members", "_id name phone email avatar")
-      .exec();
-
-    return {
-      EM: "Delete members successfully!",
-      EC: 0,
-      DT: updatedGroup,
-    };
+    );
+    if (updatedGroup) {
+      return {
+        EM: "Update avatar group successfully!",
+        EC: 0,
+        DT: updatedGroup,
+      };
+    } else {
+      return {
+        EM: "No group found for the given id!",
+        EC: 0,
+        DT: null,
+      };
+    }
   } catch (error) {
+    console.log("Error updating avatar group: ", error);
     return {
-      EM: "Error from server!",
+      EM: "Something went wrong on the server",
       EC: 1,
+      DT: null,
     };
   }
 };
+
 module.exports = {
   CreateNewGroup,
   GetAllGroupByUserId,
@@ -221,5 +229,5 @@ module.exports = {
   DeleteMembersFromGroup,
   DeleteGroupById,
   GetAllGroupsWithLatestMessage,
-  LeaderLeaveGroup,
+  updateAvatarGroup,
 };

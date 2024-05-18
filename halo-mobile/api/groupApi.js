@@ -41,8 +41,8 @@ const groupApi = {
     const url = "/get-all-group-latest-mes";
     return axiosClient.post(url, data);
   },
-  leaderLeaveGroup: (data) => {
-    const url = "/leader-leave-group";
+  updateAvatarGroup: (data) => {
+    const url = "/update-avatar-group";
     return axiosClient.post(url, data);
   },
 };

@@ -24,12 +24,25 @@ const CustomPopup = ({ isVisible, avatars, user, data, navigation }) => {
   if (!isVisible) return null;
 
   const renderAvatarItem = ({ item }) => (
-    <Avatar
-      size={50}
-      rounded
-      title={extendFunctions.getAvatarName(item.name)}
-      containerStyle={{ backgroundColor: item.avatar.color }}
-    />
+    <View>
+      {item.avatar.uri ? ( // Nếu chưa chọn ảnh mới, nhưng người dùng đã có ảnh, hiển thị ảnh của người dùng
+        <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
+      ) : (
+        // Nếu chưa chọn ảnh mới và người dùng cũng chưa có ảnh, hiển thị avatar mặc định
+        <Avatar
+          size={50}
+          rounded
+          title={extendFunctions.getAvatarName(item.name)}
+          containerStyle={{ backgroundColor: item.avatar.color }}
+        />
+      )}
+    </View>
+    // <Avatar
+    //   size={50}
+    //   rounded
+    //   title={extendFunctions.getAvatarName(item.name)}
+    //   containerStyle={{ backgroundColor: item.avatar.color }}
+    // />
   );
 
   return (
@@ -45,8 +58,8 @@ const CustomPopup = ({ isVisible, avatars, user, data, navigation }) => {
       <TouchableOpacity
         style={styles.confirmButton}
         onPress={async () => {
-          if (data.members.length < 2) {
-            alert("Cần 3 thành viên để lập nhóm!");
+          if (data.groupName === "") {
+            alert("Hãy đặt tên nhóm!");
           } else {
             const res = await groupApi.createGroup(data);
             if (res) {
@@ -79,10 +92,9 @@ const CreateGroup = ({ navigation }) => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [tab, setTab] = useState("friends");
   // console.log(selectedUsers);
-  const recentUsers = conversation;
   const [originalFriends, setOriginalFriends] = useState([...user.friends]);
   const [friends, setFriends] = useState(originalFriends);
-
+  const recentUsers = originalFriends;
   const handleSearch = (input) => {
     if (input === "") {
       setFriends(originalFriends);
@@ -131,12 +143,24 @@ const CreateGroup = ({ navigation }) => {
       onPress={() => handleUserSelect(item)}
     >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <Avatar
+        {item.avatar.uri ? ( // Nếu chưa chọn ảnh mới, nhưng người dùng đã có ảnh, hiển thị ảnh của người dùng
+          <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
+        ) : (
+          // Nếu chưa chọn ảnh mới và người dùng cũng chưa có ảnh, hiển thị avatar mặc định
+          <Avatar
+            size={50}
+            rounded
+            title={extendFunctions.getAvatarName(item.name)}
+            containerStyle={{ backgroundColor: item.avatar.color }}
+          />
+        )}
+
+        {/* <Avatar
           size={50}
           rounded
           title={extendFunctions.getAvatarName(item.name)}
           containerStyle={{ backgroundColor: item.avatar.color }}
-        />
+        /> */}
         <Text
           style={{
             fontSize: 16,

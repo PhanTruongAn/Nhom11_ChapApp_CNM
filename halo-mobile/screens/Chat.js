@@ -25,7 +25,7 @@ import extendFunctions from "../constants/extendFunctions";
 import { useRoute } from "@react-navigation/core";
 import { useDispatch, useSelector } from "react-redux";
 import { senderMessenger } from "../config/configSocket";
-import { receiveMessenger } from "../config/configSocket";
+import { receiveMessenger, reload, receiveMess } from "../config/configSocket";
 import { retrieveMessenger } from "../config/configSocket";
 import socket from "../config/configSocket";
 import chatApi from "../api/chatApi";
@@ -173,7 +173,7 @@ const ChatScreen = ({ navigation }) => {
     const minutes = date.getMinutes();
     return `${hours}:${minutes}`;
   };
-  console.log("Messages:", messages);
+  // console.log("Messages:", messages);
   const getAllChat = async () => {
     const data = {
       sender: userSender.phone,
@@ -188,12 +188,12 @@ const ChatScreen = ({ navigation }) => {
       }
     }
     // console.log("MessagesList: ", res.DT);
-    console.log("MessagesList: ", filteredMessages);
+    // console.log("MessagesList: ", filteredMessages);
     setMessages(filteredMessages);
   };
   useEffect(() => {
     socket.on("receiveMessenger", (res) => {
-      console.log("Res:", res);
+      // console.log("Res:", res);
       setMessages((prevState) => [
         ...prevState,
         {
@@ -211,7 +211,7 @@ const ChatScreen = ({ navigation }) => {
 
   useEffect(() => {
     socket.on("retrieveMes", (res) => {
-      console.log("Res:", res);
+      // console.log("Res:", res);
       setMessages((prevState) => {
         const updatedMessages = prevState.map((message) => {
           if (message.idMessenger === res.idMessenger) {
@@ -245,7 +245,7 @@ const ChatScreen = ({ navigation }) => {
 
     if (!result.cancelled) {
       setSelectedImage(result.uri);
-      console.log("Hình ảnh đã được chọn:", result.uri);
+      // console.log("Hình ảnh đã được chọn:", result.uri);
     }
   };
 
@@ -285,7 +285,7 @@ const ChatScreen = ({ navigation }) => {
         .upload(params)
         .promise()
         .then((data) => data.Location);
-      console.log("Upload hình ảnh thành công:", imageUrl);
+      // console.log("Upload hình ảnh thành công:", imageUrl);
       return imageUrl; // Trả về giá trị imageUrl cho hàm gọi
     } catch (error) {
       Alert.alert("Có lỗi xảy ra khi tải ảnh lên");
@@ -316,11 +316,11 @@ const ChatScreen = ({ navigation }) => {
     )}-${uuid.substr(16, 4)}-${uuid.substr(20)}`;
   };
   const handleSend = async () => {
-    console.log("anh sau khi an gui:", selectedImage);
+    // console.log("anh sau khi an gui:", selectedImage);
     if (selectedImage != null) {
       try {
         const imageUrl = await handlerUpdateImageToS3(selectedImage);
-        console.log("link anh:", imageUrl);
+        // console.log("link anh:", imageUrl);
 
         if (imageUrl) {
           const data = {
@@ -348,8 +348,9 @@ const ChatScreen = ({ navigation }) => {
           });
 
           const res = await chatApi.sendMessenger(data);
+          receiveMess(data);
           setSelectedImage(null);
-          console.log(res);
+          // console.log(res);
         }
       } catch (error) {
         console.error("Lỗi khi gửi tin nhắn kèm hình ảnh:", error);
@@ -380,7 +381,8 @@ const ChatScreen = ({ navigation }) => {
         isDeleted: false,
       });
       const res = await chatApi.sendMessenger(data);
-      console.log(res);
+      receiveMess(data);
+      // console.log(res);
     }
   };
 
@@ -404,7 +406,7 @@ const ChatScreen = ({ navigation }) => {
     );
     setMessages(newMessages);
     const rs = await chatApi.deleteMessenger(data);
-    console.log("Result: ", rs.DT);
+    // console.log("Result: ", rs.DT);
   };
   const handleRetrieveMessage = async (messageId) => {
     const updatedMessages = messages.map((message) => {
@@ -424,7 +426,7 @@ const ChatScreen = ({ navigation }) => {
       receiver: userReceiver.phone,
     };
     retrieveMessenger({ ...data });
-    console.log("Data update:", res.DT);
+    // console.log("Data update:", res.DT);
   };
   // Hàm để mở IconPickerModal
   const handleEmojiPick = (emoji) => {
@@ -433,7 +435,7 @@ const ChatScreen = ({ navigation }) => {
   const handleCloseEmojiBoard = () => {
     setEmojiVisible(false);
   };
-  console.log("Check:", isEmojiVisible);
+  // console.log("Check:", isEmojiVisible);
   const handleOpenEmojiBoard = () => {
     if (selectedImage === null && selectedVideo == null) {
       Keyboard.dismiss();
@@ -490,8 +492,9 @@ const ChatScreen = ({ navigation }) => {
       });
 
       const res = await chatApi.sendMessenger(data);
+      receiveMess(data);
       setSelectedGif(null);
-      console.log(res);
+      // console.log(res);
     } catch (error) {
       console.error("Lỗi khi gửi gif:", error);
     }
@@ -551,7 +554,7 @@ const ChatScreen = ({ navigation }) => {
         .upload(params)
         .promise()
         .then((data) => data.Location);
-      console.log("Upload video thành công:", videoUrl);
+      // console.log("Upload video thành công:", videoUrl);
       return videoUrl; // Trả về giá trị videoUrl cho hàm gọi
     } catch (error) {
       Alert.alert("Có lỗi xảy ra khi tải video lên");
@@ -591,6 +594,7 @@ const ChatScreen = ({ navigation }) => {
           });
 
           const res = await chatApi.sendMessenger(data);
+          receiveMess(data);
           setSelectedVideo(null);
           console.log(res);
         }
@@ -736,9 +740,16 @@ const ChatScreen = ({ navigation }) => {
 
   // const headerTitle =
   // messages.length > 0 ? messages[messages.length - 1].sender : "";
-
+  const reloadMess = () => {
+    reload();
+    navigation.goBack();
+  };
   const renderBackButton = () => (
-    <TouchableOpacity onPress={() => navigation.goBack()}>
+    <TouchableOpacity
+      onPress={() => {
+        navigation.goBack();
+      }}
+    >
       <AntDesign name="arrowleft" size={24} color="white" />
     </TouchableOpacity>
   );
@@ -746,7 +757,7 @@ const ChatScreen = ({ navigation }) => {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={reloadMess}>
           <AntDesign name="arrowleft" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerText}>{userReceiver.name}</Text>

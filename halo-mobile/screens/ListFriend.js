@@ -432,11 +432,19 @@ const GroupListComponent = ({ navigation }) => {
             navigation.navigate("ChatGroup");
           }}
         >
-          <Avatar
-            size={50}
-            rounded
-            source={require("../assets/avatar-default.jpeg")}
-          />
+          {item.avatar.uri ? ( // Nếu đã chọn ảnh mới, hiển thị ảnh mới
+            <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
+          ) : item.avatar.uri ? ( // Nếu chưa chọn ảnh mới, nhưng người dùng đã có ảnh, hiển thị ảnh của người dùng
+            <Avatar size={50} rounded source={{ uri: item.avatar.uri }} />
+          ) : (
+            // Nếu chưa chọn ảnh mới và người dùng cũng chưa có ảnh, hiển thị avatar mặc định
+            <Avatar
+              size={50}
+              rounded
+              source={require("../assets/avatar-default.jpeg")}
+            />
+          )}
+
           <Text style={styles.itemText}>{item.name}</Text>
           <TouchableOpacity
             style={{

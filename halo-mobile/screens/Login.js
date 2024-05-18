@@ -14,7 +14,7 @@ import userApi from "../api/userApi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useDispatch } from "react-redux";
 import { fetchUserToken, loginUser } from "../redux/userSlice";
-import { handleCustomClient } from "../config/configSocket";
+import { handleCustomClient, reload } from "../config/configSocket";
 const Login = ({ navigation }) => {
   const dispatch = useDispatch();
   const [showPass, setShowPass] = useState(false);
@@ -42,10 +42,11 @@ const Login = ({ navigation }) => {
         Alert.alert("Đăng nhập thành công!");
         await AsyncStorage.setItem("login", JSON.stringify(req.DT));
         await AsyncStorage.setItem("isLoggedIn", JSON.stringify(true));
-        handleCustomClient({ customId: req.DT.phone });
         // await AsyncStorage.removeItem("login");
         // await AsyncStorage.removeItem("isLoggedIn");
         navigation.navigate("BottomTabNavigator");
+        handleCustomClient({ customId: req.DT.phone });
+        reload({ customId: req.DT.phone });
         setPhone("");
         setPassword("");
       }

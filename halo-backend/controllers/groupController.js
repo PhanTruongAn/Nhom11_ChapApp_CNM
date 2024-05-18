@@ -169,9 +169,9 @@ const handlerGetAllGroupsWithLatestMessage = async (req, res) => {
     });
   }
 };
-const handlerLeaderLeaveGroup = async (req, res) => {
+const updateAvatarGroup = async (req, res) => {
   try {
-    let data = await groupService.LeaderLeaveGroup(req.body);
+    let data = await groupService.updateAvatarGroup(req.body);
     return res.status(200).json({
       EM: data.EM,
       EC: data.EC,
@@ -197,5 +197,5 @@ module.exports = {
   handlerRetrieveMessenger,
   handlerGetAllGroupsWithLatestMessage,
   handlerDeleteMessenger,
-  handlerLeaderLeaveGroup,
+  updateAvatarGroup,
 };

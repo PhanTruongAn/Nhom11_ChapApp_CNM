@@ -188,7 +188,7 @@ const findDistinctUsers = async (user) => {
         isDeleted: user.isDeleted,
       };
     });
-    console.log(usersWithLastMessage);
+
     return {
       EM: "Get all distinct users with last messages is success!",
       EC: 0,

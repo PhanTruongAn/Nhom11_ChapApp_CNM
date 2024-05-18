@@ -23,7 +23,11 @@ import { Avatar } from "@rneui/themed";
 import extendFunctions from "../constants/extendFunctions";
 import { useRoute } from "@react-navigation/core";
 import { useDispatch, useSelector } from "react-redux";
-import { retrieveMessGroup } from "../config/configSocket";
+import {
+  retrieveMessGroup,
+  reload,
+  receiveMessGroup,
+} from "../config/configSocket";
 import socket from "../config/configSocket";
 import chatApi from "../api/chatApi";
 import { lastMessenger } from "../redux/conversationSlice";
@@ -373,6 +377,7 @@ const ChatGroup = ({ navigation }) => {
           setNewMessage("");
           console.log("Data:", data);
           const res = await groupApi.sendMessGroup(data);
+          receiveMessGroup(data);
           setSelectedImage(null);
         }
       } catch (error) {
@@ -412,6 +417,7 @@ const ChatGroup = ({ navigation }) => {
       setNewMessage("");
       console.log("Data:", data);
       const res = await groupApi.sendMessGroup(data);
+      receiveMessGroup(data);
     }
   };
   const handlerGroupOption = () => {
@@ -509,6 +515,7 @@ const ChatGroup = ({ navigation }) => {
       });
 
       const res = await groupApi.sendMessGroup(data);
+      receiveMessGroup(data);
       setSelectedGif(null);
     } catch (error) {
       console.error("Lỗi khi gửi gif:", error);
@@ -615,6 +622,7 @@ const ChatGroup = ({ navigation }) => {
           ]);
 
           const res = await groupApi.sendMessGroup(data);
+          receiveMessGroup(data);
           setSelectedVideo(null);
           console.log(res);
         }
@@ -771,7 +779,8 @@ const ChatGroup = ({ navigation }) => {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => {
-            navigation.navigate("BottomTabNavigator");
+            reload();
+            navigation.goBack();
           }}
         >
           <AntDesign name="arrowleft" size={24} color="white" />
