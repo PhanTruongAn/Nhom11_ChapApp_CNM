@@ -37,8 +37,8 @@ const checkValidate = async (user) => {
 };
 // User Registry
 const userRegistry = async (user) => {
-  let password = hashPassword(user.password);
-  const newUser = new User({ ...user, password });
+  const newPassword = hashPassword(user.password);
+  const newUser = new User({ ...user, newPassword });
   const saveUser = await newUser.save();
   const { _id, email } = saveUser;
   const userFull = await sendOtp(_id, email);
