@@ -5,7 +5,7 @@ const configSocket = (server) => {
   const URL = process.env.URL_CLIENT;
   const io = require("socket.io")(server, {
     cors: {
-      origin: URL,
+      origin: "*",
       credentials: true,
     },
   });

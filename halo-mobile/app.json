@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "chatapp",
+    "name": "Halo Chat",
     "slug": "chatapp",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,7 +14,9 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -22,7 +24,11 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "package": "com.chatapp.myapp",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -38,7 +44,10 @@
     "extra": {
       "ACCESS_KEY": "AKIA3FLD5WKWQT5KBUEW",
       "SECRET_KEY": "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",
-      "REGION": "ap-southeast-1"
+      "REGION": "ap-southeast-1",
+      "eas": {
+        "projectId": "576b568a-1daa-4035-a821-c37a24088266"
+      }
     }
   }
 }
