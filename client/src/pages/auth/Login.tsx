@@ -31,10 +31,12 @@ export default function Login() {
     }
 
     const res = await login(data, password);
+    console.log(res.message);
     if (res.status === "success") {
       navigate("/");
     } else {
-      toast.error(res.message);
+      // alert("Phone number or password wrong")
+      toast.error("Phone number or password wrong");
     }
   };
 
