@@ -12,7 +12,7 @@ import configSocket from "./src/configs/configSocket";
 const LocalStrategy = require("passport-local").Strategy;
 const app = express();
 const PORT = process.env.PORT;
-const PORT_SOCKET = 8081;
+const PORT_SOCKET = process.env.PORT_SOCKET;
 const HOST = process.env.HOST_NAME;
 // app.use(cors({origin: true, credentials: true}));
 // configCors(app);
